@@ -8,7 +8,8 @@ package ast
 //
 // Returns:
 //   - any: The result of the function.
-type DoFunc[N NodeTyper] func(a *Result[N], prev any) any
+//   - error: An error if the function failed.
+type DoFunc[N NodeTyper] func(a *Result[N], prev any) (any, error)
 
 // PartsBuilder is a builder for AST parts.
 type PartsBuilder[N NodeTyper] struct {
@@ -19,9 +20,9 @@ type PartsBuilder[N NodeTyper] struct {
 // NewPartsBuilder creates a new parts builder.
 //
 // Returns:
-//   - PartsBuilder[N]: The parts builder.
-func NewPartsBuilder[N NodeTyper]() PartsBuilder[N] {
-	return PartsBuilder[N]{
+//   - *PartsBuilder[N]: The parts builder.
+func NewPartsBuilder[N NodeTyper]() *PartsBuilder[N] {
+	return &PartsBuilder[N]{
 		parts: make([]DoFunc[N], 0),
 	}
 }
@@ -41,7 +42,14 @@ func (a *PartsBuilder[N]) Add(f DoFunc[N]) {
 // Returns:
 //   - []AstDoFunc[N]: The parts of the builder.
 func (a *PartsBuilder[N]) Build() []DoFunc[N] {
-	return a.parts
+	if len(a.parts) == 0 {
+		return nil
+	}
+
+	steps := make([]DoFunc[N], len(a.parts))
+	copy(steps, a.parts)
+
+	return steps
 }
 
 // Reset resets the builder.

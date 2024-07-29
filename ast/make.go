@@ -17,9 +17,9 @@ type Make[N NodeTyper, T gr.TokenTyper] struct {
 // NewMake creates a new Make.
 //
 // Returns:
-//   - Make[N, T]: The new Make.
-func NewMake[N NodeTyper, T gr.TokenTyper]() Make[N, T] {
-	return Make[N, T]{
+//   - *Make[N, T]: The new Make.
+func NewMake[N NodeTyper, T gr.TokenTyper]() *Make[N, T] {
+	return &Make[N, T]{
 		ast_map: make(map[T][]DoFunc[N]),
 	}
 }
@@ -87,14 +87,14 @@ func (m *Make[N, T]) Apply(root *gr.Token[T]) ([]*Node[N], error) {
 	res := NewResult[N]()
 
 	var prev any = root
+	var err error
 
 	for _, step := range steps {
-		prev = step(res, prev)
+		prev, err = step(res, prev)
+		if err != nil {
+			nodes := res.Apply()
 
-		if res.IsError() {
-			prev = nil
-
-			break
+			return nodes, fmt.Errorf("in %q: %w", root.Type.String(), err)
 		}
 	}
 
@@ -105,10 +105,7 @@ func (m *Make[N, T]) Apply(root *gr.Token[T]) ([]*Node[N], error) {
 		))
 	}
 
-	nodes, err := res.Apply()
-	if err != nil {
-		return nodes, fmt.Errorf("in %q: %w", root.Type.String(), err)
-	}
+	nodes := res.Apply()
 
 	return nodes, nil
 }

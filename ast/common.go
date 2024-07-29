@@ -55,9 +55,9 @@ func LeftRecursive[N NodeTyper, T gr.TokenTyper](root *gr.Token[T], lhs_type T, 
 			return nodes, fmt.Errorf("expected %q, got %q instead", lhs_type.String(), root.Type.String())
 		}
 
-		children, ok := root.Data.([]*gr.Token[T])
-		if !ok {
-			return nodes, fmt.Errorf("expected non-leaf node, got leaf node instead")
+		children, err := ExtractChildren(root)
+		if err != nil {
+			return nodes, err
 		} else if len(children) == 0 {
 			return nodes, fmt.Errorf("expected at least 1 child, got 0 children instead")
 		}
