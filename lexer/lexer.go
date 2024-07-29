@@ -1,13 +1,14 @@
-package grammar
+package lexer
 
 import (
 	"fmt"
 
+	gr "github.com/PlayerR9/grammar/grammar"
 	luc "github.com/PlayerR9/lib_units/common"
 )
 
 // Lexer is an interface that defines the behavior of a lexer.
-type Lexer[T TokenTyper] interface {
+type Lexer[T gr.TokenTyper] interface {
 	// SetInputStream sets the input stream of the lexer.
 	//
 	// Parameters:
@@ -29,11 +30,11 @@ type Lexer[T TokenTyper] interface {
 	// LexOne lexes the next token of the lexer.
 	//
 	// Returns:
-	//   - *Token[T]: The token of the lexer.
+	//   - *grammar.Token[T]: The token of the lexer.
 	//   - error: An error if the lexer encounters an error while lexing the next token.
 	//
 	// If the token lexed is marked as 'to skip', then the return value will be nil, nil instead.
-	LexOne() (*Token[T], error)
+	LexOne() (*gr.Token[T], error)
 }
 
 // get_tokens returns the tokens of the lexer.
@@ -42,9 +43,9 @@ type Lexer[T TokenTyper] interface {
 //   - tokens: The tokens of the lexer.
 //
 // Returns:
-//   - []*Token[T]: The tokens of the lexer.
-func get_tokens[T TokenTyper](tokens []*Token[T]) []*Token[T] {
-	eof_tok, err := NewToken(T(0), "", -1, nil)
+//   - []*grammar.Token[T]: The tokens of the lexer.
+func get_tokens[T gr.TokenTyper](tokens []*gr.Token[T]) []*gr.Token[T] {
+	eof_tok, err := gr.NewToken(T(0), "", -1, nil)
 	luc.AssertErr(err, "NewToken(%s, %q, %d, nil)", T(0).String(), "", -1)
 
 	tokens = append(tokens, eof_tok)
@@ -69,7 +70,7 @@ func get_tokens[T TokenTyper](tokens []*Token[T]) []*Token[T] {
 //   - data: The input stream of the lexer.
 //
 // Returns:
-//   - []*Token[T]: The tokens of the lexer.
+//   - []*grammar.Token[T]: The tokens of the lexer.
 //   - error: An error if the lexer encounters an error while lexing the input stream.
 //
 // This function always returns at least one token and the last one is
@@ -77,7 +78,7 @@ func get_tokens[T TokenTyper](tokens []*Token[T]) []*Token[T] {
 //
 // This function is just a convenience function that calls the SetInputStream, Lex, and
 // GetTokens methods of the lexer.
-func FullLex[T TokenTyper](lexer Lexer[T], data []byte) ([]*Token[T], error) {
+func FullLex[T gr.TokenTyper](lexer Lexer[T], data []byte) ([]*gr.Token[T], error) {
 	if lexer == nil {
 		tokens := get_tokens[T](nil)
 
@@ -88,7 +89,7 @@ func FullLex[T TokenTyper](lexer Lexer[T], data []byte) ([]*Token[T], error) {
 
 	lexer.Reset()
 
-	var tokens []*Token[T]
+	var tokens []*gr.Token[T]
 
 	for !lexer.IsDone() {
 		tk, err := lexer.LexOne()

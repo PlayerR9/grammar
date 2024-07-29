@@ -4,9 +4,8 @@ import (
 	"errors"
 	"fmt"
 
-	luc "github.com/PlayerR9/lib_units/common"
-
 	gr "github.com/PlayerR9/grammar/grammar"
+	luc "github.com/PlayerR9/lib_units/common"
 )
 
 // Parser is an interface that defines the behavior of a parser.
