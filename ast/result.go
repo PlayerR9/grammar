@@ -7,8 +7,8 @@ import (
 	lus "github.com/PlayerR9/lib_units/slices"
 )
 
-// AstResult is the result of the AST.
-type AstResult[N NodeTyper] struct {
+// Result is the result of the AST.
+type Result[N NodeTyper] struct {
 	// nodes is the nodes of the result.
 	nodes []*Node[N]
 
@@ -16,12 +16,12 @@ type AstResult[N NodeTyper] struct {
 	err error
 }
 
-// NewAstResult creates a new AstResult.
+// NewResult creates a new AstResult.
 //
 // Returns:
 //   - *AstResult[N]: The new AstResult. Never returns nil.
-func NewAstResult[N NodeTyper]() *AstResult[N] {
-	return &AstResult[N]{}
+func NewResult[N NodeTyper]() *Result[N] {
+	return &Result[N]{}
 }
 
 // MakeNode creates a new node and adds it to the result; replacing any existing nodes.
@@ -29,8 +29,8 @@ func NewAstResult[N NodeTyper]() *AstResult[N] {
 // Parameters:
 //   - t: The type of the node.
 //   - data: The data of the node.
-func (a *AstResult[N]) MakeNode(t N, data string) {
-	n := NewNode[N](t, data)
+func (a *Result[N]) MakeNode(t N, data string) {
+	n := NewNode(t, data)
 
 	a.nodes = []*Node[N]{n}
 }
@@ -40,7 +40,7 @@ func (a *AstResult[N]) MakeNode(t N, data string) {
 //
 // Parameters:
 //   - err: The error to set.
-func (a *AstResult[N]) SetError(err error) {
+func (a *Result[N]) SetError(err error) {
 	if err != nil {
 		a.err = err
 	}
@@ -50,7 +50,7 @@ func (a *AstResult[N]) SetError(err error) {
 //
 // Parameters:
 //   - nodes: The nodes to set.
-func (a *AstResult[N]) SetNodes(nodes []*Node[N]) {
+func (a *Result[N]) SetNodes(nodes []*Node[N]) {
 	nodes = lus.FilterNilValues(nodes)
 	if len(nodes) > 0 {
 		a.nodes = nodes
@@ -61,7 +61,7 @@ func (a *AstResult[N]) SetNodes(nodes []*Node[N]) {
 //
 // Parameters:
 //   - nodes: The nodes to append.
-func (a *AstResult[N]) AppendNodes(nodes []*Node[N]) {
+func (a *Result[N]) AppendNodes(nodes []*Node[N]) {
 	nodes = lus.FilterNilValues(nodes)
 
 	if len(nodes) > 0 {
@@ -73,7 +73,7 @@ func (a *AstResult[N]) AppendNodes(nodes []*Node[N]) {
 //
 // Parameters:
 //   - children: The children to append.
-func (a *AstResult[N]) AppendChildren(children []*Node[N]) {
+func (a *Result[N]) AppendChildren(children []*Node[N]) {
 	children = lus.FilterNilValues(children)
 
 	if len(children) == 0 {
@@ -98,7 +98,7 @@ func (a *AstResult[N]) AppendChildren(children []*Node[N]) {
 // Returns:
 //   - []*Node[N]: The nodes of the result.
 //   - error: The error of the result.
-func (a *AstResult[N]) Apply() ([]*Node[N], error) {
+func (a *Result[N]) Apply() ([]*Node[N], error) {
 	return a.nodes, a.err
 }
 
@@ -106,7 +106,7 @@ func (a *AstResult[N]) Apply() ([]*Node[N], error) {
 //
 // Returns:
 //   - bool: True if the result is an error. False otherwise.
-func (a *AstResult[N]) IsError() bool {
+func (a *Result[N]) IsError() bool {
 	return a.err != nil
 }
 
@@ -120,7 +120,7 @@ func (a *AstResult[N]) IsError() bool {
 //   - any: The result of the function.
 //
 // This function does nothing if f is nil or an error is set.
-func (a *AstResult[N]) DoFunc(f AstDoFunc[N], prev any) any {
+func (a *Result[N]) DoFunc(f DoFunc[N], prev any) any {
 	if f == nil || a.err != nil {
 		return nil
 	}
@@ -138,7 +138,7 @@ func (a *AstResult[N]) DoFunc(f AstDoFunc[N], prev any) any {
 //   - error: The error of the result.
 //
 // This function does nothing ignores the functions that are nil.
-func (a *AstResult[N]) Exec(fs ...AstDoFunc[N]) ([]*Node[N], error) {
+func (a *Result[N]) Exec(fs []DoFunc[N]) ([]*Node[N], error) {
 	var top int
 
 	for i := 0; i < len(fs); i++ {
@@ -177,7 +177,7 @@ func (a *AstResult[N]) Exec(fs ...AstDoFunc[N]) ([]*Node[N], error) {
 // Parameters:
 //   - new_type: The new type of the nodes.
 //   - new_data: The new data of the nodes.
-func (a *AstResult[N]) TransformNodes(new_type N, new_data string) {
+func (a *Result[N]) TransformNodes(new_type N, new_data string) {
 	if len(a.nodes) == 0 {
 		return
 	}
