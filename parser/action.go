@@ -1,16 +1,24 @@
 package parser
 
 import (
+	"fmt"
+
 	gr "github.com/PlayerR9/grammar/grammar"
 	luc "github.com/PlayerR9/lib_units/common"
 )
 
 // Actioner is an interface that defines the behavior of an action.
 type Actioner interface {
+	fmt.Stringer
 }
 
 // ShiftAction is the shift action.
 type ShiftAction struct {
+}
+
+// String implements the Actioner interface.
+func (s *ShiftAction) String() string {
+	return "Shift"
 }
 
 // NewShiftAction creates a new shift action.
@@ -25,6 +33,11 @@ func NewShiftAction() *ShiftAction {
 type ReduceAction[T gr.TokenTyper] struct {
 	// rule is the rule to reduce.
 	rule *Rule[T]
+}
+
+// String implements the Actioner interface.
+func (r *ReduceAction[T]) String() string {
+	return "Reduce"
 }
 
 // NewReduceAction creates a new reduce action.
@@ -49,6 +62,11 @@ func NewReduceAction[T gr.TokenTyper](rule *Rule[T]) (*ReduceAction[T], error) {
 type AcceptAction[T gr.TokenTyper] struct {
 	// rule is the rule to accept.
 	rule *Rule[T]
+}
+
+// String implements the Actioner interface.
+func (a *AcceptAction[T]) String() string {
+	return "Accept"
 }
 
 // NewAcceptAction creates a new accept action.

@@ -4,7 +4,7 @@ go 1.22.5
 
 require github.com/PlayerR9/lib_units v0.1.1
 
-require github.com/PlayerR9/listlike v0.1.0 // indirect
+require github.com/PlayerR9/listlike v0.1.0
 
 require (
 	github.com/PlayerR9/tree v0.1.10

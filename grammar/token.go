@@ -38,6 +38,7 @@ type TokenTyper interface {
 	~int
 
 	fmt.Stringer
+	fmt.GoStringer
 }
 
 // Size returns the number of runes in the token's data.
