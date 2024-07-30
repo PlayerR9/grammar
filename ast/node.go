@@ -17,6 +17,9 @@ type NodeTyper interface {
 	fmt.Stringer
 }
 
+// AstNoder is an interface that defines the behavior of an AST node.
+type AstNoder interface{}
+
 // Node is a node in the AST.
 type Node[N NodeTyper] struct {
 	// Parent is the parent of the node.
