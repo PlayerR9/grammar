@@ -45,8 +45,7 @@ type Lexer[T gr.TokenTyper] interface {
 // Returns:
 //   - []*grammar.Token[T]: The tokens of the lexer.
 func get_tokens[T gr.TokenTyper](tokens []*gr.Token[T]) []*gr.Token[T] {
-	eof_tok, err := gr.NewToken(T(0), "", -1, nil)
-	luc.AssertErr(err, "NewToken(%s, %q, %d, nil)", T(0).String(), "", -1)
+	eof_tok := gr.NewToken(T(0), "", -1, nil)
 
 	tokens = append(tokens, eof_tok)
 	if len(tokens) == 1 {

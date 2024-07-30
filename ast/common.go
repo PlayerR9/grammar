@@ -5,6 +5,7 @@ import (
 
 	gr "github.com/PlayerR9/grammar/grammar"
 	luc "github.com/PlayerR9/lib_units/common"
+	tr "github.com/PlayerR9/tree/tree"
 )
 
 // PrintAst stringifies the AST.
@@ -19,7 +20,7 @@ func PrintAst[N NodeTyper](root *Node[N]) string {
 		return ""
 	}
 
-	str, err := gr.PrintTree(root)
+	str, err := tr.PrintTree(root)
 	luc.AssertErr(err, "Strings.PrintTree(root)")
 
 	return str
@@ -135,12 +136,7 @@ func ExtractData[T gr.TokenTyper](node *gr.Token[T]) (string, error) {
 		return "", luc.NewErrNilParameter("node")
 	}
 
-	data, ok := node.Data.(string)
-	if !ok {
-		return "", fmt.Errorf("expected string, got %T instead", node.Data)
-	}
-
-	return data, nil
+	return node.Data, nil
 }
 
 // ExtractChildren extracts the children from a token.
@@ -156,9 +152,10 @@ func ExtractChildren[T gr.TokenTyper](node *gr.Token[T]) ([]*gr.Token[T], error)
 		return nil, luc.NewErrNilParameter("node")
 	}
 
-	children, ok := node.Data.([]*gr.Token[T])
-	if !ok {
-		return nil, fmt.Errorf("expected []*Token, got %T instead", node.Data)
+	var children []*gr.Token[T]
+
+	for c := node.FirstChild; c != nil; c = c.NextSibling {
+		children = append(children, c)
 	}
 
 	return children, nil

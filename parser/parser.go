@@ -103,8 +103,8 @@ func apply_reduce[T gr.TokenTyper](parser Parser[T], rule *Rule[T]) error {
 
 	parser.Accept()
 
-	tk, err := gr.NewToken(rule.lhs, popped, last_token.At, last_token.Lookahead)
-	luc.AssertErr(err, "NewToken(%s, popped, %d, %d)", rule.lhs.String(), last_token.At, last_token.Lookahead)
+	tk := gr.NewToken(rule.lhs, "", last_token.At, last_token.Lookahead)
+	tk.AddChildren(popped)
 
 	parser.Push(tk)
 

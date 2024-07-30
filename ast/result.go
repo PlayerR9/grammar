@@ -75,7 +75,7 @@ func (a *Result[N]) AppendChildren(children []*Node[N]) error {
 		return errors.New("cannot append children to multiple nodes")
 	}
 
-	a.nodes[0].AppendChildren(children)
+	a.nodes[0].AddChildren(children)
 
 	return nil
 }
