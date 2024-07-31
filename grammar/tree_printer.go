@@ -45,8 +45,7 @@ func (p *token_printer[S]) trav(elem *stack_element[S]) []*stack_element[S] {
 	if elem.indent != "" {
 		builder.WriteString(elem.indent)
 
-		ok := elem.node.IsLeaf()
-		if !ok || elem.is_last {
+		if elem.node.FirstChild != nil || elem.is_last {
 			builder.WriteString("└── ")
 		} else {
 			builder.WriteString("├── ")

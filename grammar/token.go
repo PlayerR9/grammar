@@ -4,8 +4,6 @@ import (
 	"strconv"
 	"strings"
 	"unicode/utf8"
-
-	"github.com/PlayerR9/lib_units/common"
 )
 
 // Token is a node in a tree.
@@ -16,14 +14,6 @@ type Token[S TokenTyper] struct {
 	Data      string
 	At        int
 	Lookahead *Token[S]
-}
-
-// IsLeaf is a method that checks whether the node is a leaf.
-//
-// Returns:
-//   - bool: True if the node is a leaf, false otherwise.
-func (tk *Token[S]) IsLeaf() bool {
-	return tk.FirstChild == nil
 }
 
 // String implements the fmt.Stringer interface.
@@ -63,28 +53,6 @@ func (t *Token[S]) Size() int {
 	}
 
 	return size
-}
-
-// SetLookahead sets the lookahead token.
-//
-// Parameters:
-//   - lookahead: The lookahead token.
-func (t *Token[S]) SetLookahead(lookahead *Token[S]) {
-	if lookahead == nil {
-		t.Lookahead = nil
-
-		return
-	}
-
-	t.Lookahead = common.AssertConv[*Token[S]](lookahead, "lookahead")
-}
-
-// GetLookahead returns the lookahead token.
-//
-// Returns:
-//   - *Token[S]: The lookahead token.
-func (t *Token[S]) GetLookahead() *Token[S] {
-	return t.Lookahead
 }
 
 // GetType returns the type of the token.

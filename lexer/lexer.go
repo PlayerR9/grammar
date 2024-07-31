@@ -61,7 +61,7 @@ func get_tokens[S gr.TokenTyper](tokens []*gr.Token[S]) []*gr.Token[S] {
 	prev := tokens[0]
 
 	for _, next := range tokens[1:] {
-		prev.SetLookahead(next)
+		prev.Lookahead = next
 		prev = next
 	}
 

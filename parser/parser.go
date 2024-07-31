@@ -171,7 +171,7 @@ func FullParse[S gr.TokenTyper](parser Parser[S], tokens []*gr.Token[S]) ([]*gr.
 		top, ok := parser.Peek()
 		luc.AssertOk(ok, "parser.Peek()")
 
-		act, err := parser.GetDecision(top.GetLookahead())
+		act, err := parser.GetDecision(top.Lookahead)
 		if err != nil {
 			forest := get_forest(parser)
 
