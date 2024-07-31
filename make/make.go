@@ -1,46 +1,10 @@
-package ast
+package make
 
 import (
-	"fmt"
-
+	ast "github.com/PlayerR9/grammar/ast"
 	luc "github.com/PlayerR9/lib_units/common"
 	lls "github.com/PlayerR9/listlike/stack"
 )
-
-// NodeTyper is an interface that defines the behavior of a node type.
-type NodeTyper interface {
-	~int
-
-	fmt.Stringer
-}
-
-// Noder is an interface that defines the behavior of a node.
-type Noder interface {
-	// IsLeaf is a method that checks whether the node is a leaf.
-	//
-	// Returns:
-	//   - bool: True if the node is a leaf, false otherwise.
-	IsLeaf() bool
-
-	// AddChild is a method that adds a child to the node. If the child is nil or not
-	// of the correct type, nothing happens.
-	//
-	// Parameters:
-	//   - child: The child to add.
-	AddChild(child Noder)
-
-	// AddChildren is a convenience function to add multiple children to the node at once.
-	// It is more efficient than adding them one by one. Therefore, the behaviors are the
-	// same as the behaviors of the Noder.AddChild function.
-	//
-	// Parameters:
-	//   - children: The children to add.
-	AddChildren(children []Noder)
-
-	luc.Iterable[Noder]
-
-	fmt.Stringer
-}
 
 // DFSDoFunc is a function that is called for each node.
 //
@@ -50,16 +14,16 @@ type Noder interface {
 //
 // Returns:
 //   - error: An error if the DFS could not be applied.
-type DFSDoFunc[N Noder, I any] func(node N, data I) error
+type DFSDoFunc[N ast.Noder, I any] func(node N, data I) error
 
 // InitFunc is a function that initializes the data.
 //
 // Returns:
 //   - I: The data.
-type InitFunc[N Noder, I any] func() I
+type InitFunc[N ast.Noder, I any] func() I
 
 // SimpleDFS is a simple depth-first search.
-type SimpleDFS[N Noder, I any] struct {
+type SimpleDFS[N ast.Noder, I any] struct {
 	// do_func is the function that is called for each node.
 	do_func DFSDoFunc[N, I]
 
@@ -77,7 +41,7 @@ type SimpleDFS[N Noder, I any] struct {
 //
 // If f is nil, simpleDFS is returned as nil.
 // If init is nil, the default init function is used which returns the zero value of I.
-func NewSimpleDFS[N Noder, I any](f DFSDoFunc[N, I], init InitFunc[N, I]) *SimpleDFS[N, I] {
+func NewSimpleDFS[N ast.Noder, I any](f DFSDoFunc[N, I], init InitFunc[N, I]) *SimpleDFS[N, I] {
 	if f == nil {
 		return nil
 	}

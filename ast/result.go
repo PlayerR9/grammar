@@ -62,8 +62,17 @@ func (a *Result[N]) AppendNodes(nodes []*Node[N]) {
 //
 // Returns:
 //   - error: An error if the result is an error.
-func (a *Result[N]) AppendChildren(children []*Node[N]) error {
-	children = lus.FilterNilValues(children)
+func (a *Result[N]) AppendChildren(children []Noder) error {
+	var top int
+
+	for i := 0; i < len(children); i++ {
+		if children[i] != nil {
+			children[top] = children[i]
+			top++
+		}
+	}
+
+	children = children[:top]
 
 	if len(children) == 0 {
 		return nil

@@ -69,15 +69,17 @@ func (m *Make[N, T]) AddEntry(t T, steps []DoFunc[N]) error {
 // Apply creates the AST given the root.
 //
 // Parameters:
-//   - root: The root of the AST.
+//   - tree: The root of the AST.
 //
 // Returns:
 //   - []*Node[N]: The AST.
 //   - error: An error if the AST could not be created.
-func (m *Make[N, T]) Apply(root *gr.Token[T]) ([]*Node[N], error) {
-	if root == nil {
-		return nil, luc.NewErrNilParameter("root")
+func (m *Make[N, T]) Apply(tree *gr.TokenTree[T]) ([]*Node[N], error) {
+	if tree == nil {
+		return nil, luc.NewErrNilParameter("tree")
 	}
+
+	root := tree.Root()
 
 	steps, ok := m.ast_map[root.Type]
 	if !ok {
