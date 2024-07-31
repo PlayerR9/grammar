@@ -5,19 +5,17 @@ import (
 	luc "github.com/PlayerR9/lib_units/common"
 )
 
-// Rule is a struct that represents a rule of type T.
-type Rule[T gr.TokenTyper] struct {
+// Rule is a struct that represents a rule of type S.
+type Rule[S gr.TokenTyper] struct {
 	// lhs is the left-hand side of the rule.
-	lhs T
+	lhs S
 
 	// rhss is the right-hand side of the rule.
-	rhss []T
+	rhss []S
 }
 
-// Iterator implements the luc.Iterable interface.
-//
-// Never returns nil.
-func (r *Rule[T]) Iterator() luc.Iterater[T] {
+// Iterator implements the Ruler interface.
+func (r *Rule[S]) Iterator() luc.Iterater[S] {
 	return luc.NewSimpleIterator(r.rhss)
 }
 
@@ -28,15 +26,15 @@ func (r *Rule[T]) Iterator() luc.Iterater[T] {
 //   - rhss: The right-hand side of the rule.
 //
 // Returns:
-//   - *Rule: The new rule.
+//   - *Rule[S]: The new rule.
 //
 // Returns nil if the rhss is empty.
-func NewRule[T gr.TokenTyper](lhs T, rhss []T) *Rule[T] {
+func NewRule[S gr.TokenTyper](lhs S, rhss []S) *Rule[S] {
 	if len(rhss) == 0 {
 		return nil
 	}
 
-	return &Rule[T]{
+	return &Rule[S]{
 		lhs:  lhs,
 		rhss: rhss,
 	}

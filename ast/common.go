@@ -5,7 +5,6 @@ import (
 
 	gr "github.com/PlayerR9/grammar/grammar"
 	luc "github.com/PlayerR9/lib_units/common"
-	tr "github.com/PlayerR9/tree/tree"
 )
 
 // PrintAst stringifies the AST.
@@ -15,13 +14,9 @@ import (
 //
 // Returns:
 //   - string: The AST as a string.
-func PrintAst[N NodeTyper](root *Node[N]) string {
-	if root == nil {
-		return ""
-	}
-
-	str, err := tr.PrintTree(root)
-	luc.AssertErr(err, "Strings.PrintTree(root)")
+func PrintAst[N Noder](root N) string {
+	str, err := PrintTree(root)
+	luc.AssertErr(err, "PrintTree(root)")
 
 	return str
 }

@@ -30,13 +30,13 @@ func NewShiftAction() *ShiftAction {
 }
 
 // ReduceAction is the reduce action.
-type ReduceAction[T gr.TokenTyper] struct {
+type ReduceAction[S gr.TokenTyper] struct {
 	// rule is the rule to reduce.
-	rule *Rule[T]
+	rule *Rule[S]
 }
 
 // String implements the Actioner interface.
-func (r *ReduceAction[T]) String() string {
+func (r *ReduceAction[S]) String() string {
 	return "Reduce"
 }
 
@@ -48,24 +48,24 @@ func (r *ReduceAction[T]) String() string {
 // Returns:
 //   - *ReduceAction: The new reduce action.
 //   - error: An error of type *common.ErrInvalidParameter if the rule is nil.
-func NewReduceAction[T gr.TokenTyper](rule *Rule[T]) (*ReduceAction[T], error) {
+func NewReduceAction[S gr.TokenTyper](rule *Rule[S]) (*ReduceAction[S], error) {
 	if rule == nil {
 		return nil, luc.NewErrNilParameter("rule")
 	}
 
-	return &ReduceAction[T]{
+	return &ReduceAction[S]{
 		rule: rule,
 	}, nil
 }
 
 // AcceptAction is the accept action.
-type AcceptAction[T gr.TokenTyper] struct {
+type AcceptAction[S gr.TokenTyper] struct {
 	// rule is the rule to accept.
-	rule *Rule[T]
+	rule *Rule[S]
 }
 
 // String implements the Actioner interface.
-func (a *AcceptAction[T]) String() string {
+func (a *AcceptAction[S]) String() string {
 	return "Accept"
 }
 
@@ -77,12 +77,12 @@ func (a *AcceptAction[T]) String() string {
 // Returns:
 //   - *AcceptAction: The new accept action.
 //   - error: An error of type *common.ErrInvalidParameter if the rule is nil.
-func NewAcceptAction[T gr.TokenTyper](rule *Rule[T]) (*AcceptAction[T], error) {
+func NewAcceptAction[S gr.TokenTyper](rule *Rule[S]) (*AcceptAction[S], error) {
 	if rule == nil {
 		return nil, luc.NewErrNilParameter("rule")
 	}
 
-	return &AcceptAction[T]{
+	return &AcceptAction[S]{
 		rule: rule,
 	}, nil
 }

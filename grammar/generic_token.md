@@ -2,10 +2,7 @@
 package grammar
 
 import (
-	"slices"
-
 	"github.com/PlayerR9/lib_units/common"
-	"github.com/PlayerR9/tree/tree"
 )
 
 // TokenIterator is a pull-based iterator that iterates
@@ -20,7 +17,7 @@ type TokenIterator[T TokenTyper] struct {
 //
 // Moreover, the return value is always of type *Token[T] and never nil; unless the iterator
 // has reached the end of the branch.
-func (iter *TokenIterator[T]) Consume() (tree.Noder, error) {
+func (iter *TokenIterator[T]) Consume() (TreeNoder, error) {
 	if iter.current == nil {
 		return nil, common.NewErrExhaustedIter()
 	}
@@ -45,24 +42,24 @@ type Token[T TokenTyper] struct {
 	Type                                                    T
 }
 
-// IsLeaf implements the tree.Noder interface.
+// IsLeaf implements the Tokener interface.
 func (tn *Token[T]) IsLeaf() bool {
 	return tn.FirstChild == nil
 }
 
-// GetParent implements the tree.Noder interface.
-func (tn *Token[T]) GetParent() tree.Noder {
+/* // GetParent implements the Tokener interface.
+func (tn *Token[T]) GetParent() Tokener {
 	return tn.Parent
 }
 
-// IsSingleton implements the tree.Noder interface.
+// IsSingleton implements the Tokener interface.
 func (tn *Token[T]) IsSingleton() bool {
 	return tn.FirstChild != nil && tn.FirstChild == tn.LastChild
 }
 
-// Cleanup implements the tree.Noder interface.
-func (tn *Token[T]) Cleanup() []tree.Noder {
-	var children []tree.Noder
+// Cleanup implements the Tokener interface.
+func (tn *Token[T]) Cleanup() []Tokener {
+	var children []Tokener
 
 	for c := tn.FirstChild; c != nil; c = c.NextSibling {
 		children = append(children, c)
@@ -89,8 +86,8 @@ func (tn *Token[T]) Cleanup() []tree.Noder {
 	return children
 }
 
-// DeleteChild implements the tree.Noder interface.
-func (tn *Token[T]) DeleteChild(target tree.Noder) []tree.Noder {
+// DeleteChild implements the Tokener interface.
+func (tn *Token[T]) DeleteChild(target Tokener) []Tokener {
 	if target == nil {
 		return nil
 	}
@@ -115,7 +112,7 @@ func (tn *Token[T]) DeleteChild(target tree.Noder) []tree.Noder {
 	tn.FirstChild = nil
 	tn.LastChild = nil
 
-	conv := make([]tree.Noder, 0, len(children))
+	conv := make([]Tokener, 0, len(children))
 
 	for _, child := range children {
 		conv = append(conv, child)
@@ -124,13 +121,13 @@ func (tn *Token[T]) DeleteChild(target tree.Noder) []tree.Noder {
 	return conv
 }
 
-// GetFirstChild implements the tree.Noder interface.
-func (tn *Token[T]) GetFirstChild() tree.Noder {
+// GetFirstChild implements the Tokener interface.
+func (tn *Token[T]) GetFirstChild() Tokener {
 	return tn.FirstChild
 }
 
-// AddChild implements the tree.Noder interface.
-func (tn *Token[T]) AddChild(target tree.Noder) {
+// AddChild implements the Tokener interface.
+func (tn *Token[T]) AddChild(target Tokener) {
 	if target == nil {
 		return
 	}
@@ -156,8 +153,8 @@ func (tn *Token[T]) AddChild(target tree.Noder) {
 	tn.LastChild = tmp
 }
 
-// LinkChildren implements the tree.Noder interface.
-func (tn *Token[T]) LinkChildren(children []tree.Noder) {
+// LinkChildren implements the Tokener interface.
+func (tn *Token[T]) LinkChildren(children []Tokener) {
 	var valid_children []*Token[T]
 
 	for _, child := range children {
@@ -240,8 +237,8 @@ func (tn *Token[T]) delete_child(target *Token[T]) []*Token[T] {
 	return children
 }
 
-// RemoveNode implements the tree.Noder interface.
-func (tn *Token[T]) RemoveNode() []tree.Noder {
+// RemoveNode implements the Tokener interface.
+func (tn *Token[T]) RemoveNode() []Tokener {
 	prev := tn.PrevSibling
 	next := tn.NextSibling
 	parent := tn.Parent
@@ -289,7 +286,7 @@ func (tn *Token[T]) RemoveNode() []tree.Noder {
 	tn.FirstChild = nil
 	tn.LastChild = nil
 
-	conv := make([]tree.Noder, 0, len(sub_roots))
+	conv := make([]Tokener, 0, len(sub_roots))
 	for _, child := range sub_roots {
 		conv = append(conv, child)
 	}
@@ -297,14 +294,14 @@ func (tn *Token[T]) RemoveNode() []tree.Noder {
 	return conv
 }
 
-// Copy implements the tree.Noder interface.
+// Copy implements the Tokener interface.
 //
 // Although this function never returns nil, it does not copy the parent nor the sibling pointers.
 func (tn *Token[T]) Copy() common.Copier {
-	var child_copy []tree.Noder
+	var child_copy []Tokener
 
 	for c := tn.FirstChild; c != nil; c = c.NextSibling {
-		child_copy = append(child_copy, c.Copy().(tree.Noder))
+		child_copy = append(child_copy, c.Copy().(Tokener))
 	}
 
 	// Copy here the data of the node.
@@ -316,14 +313,14 @@ func (tn *Token[T]) Copy() common.Copier {
 	tn_copy.LinkChildren(child_copy)
 
 	return tn_copy
-}
+} */
 
-// Iterator implements the tree.Noder interface.
+// Iterator implements the Tokener interface.
 //
 // This function returns an iterator that iterates over the direct children of the node.
 // Implemented as a pull-based iterator, this function never returns nil and any of the
 // values is guaranteed to be a non-nil node of type Token[T].
-func (tn *Token[T]) Iterator() common.Iterater[tree.Noder] {
+func (tn *Token[T]) Iterator() common.Iterater[TreeNoder] {
 	return &TokenIterator[T]{
 		parent:  tn,
 		current: tn.FirstChild,
@@ -354,7 +351,7 @@ func NewToken[T TokenTyper](t_type T, data string, at int, lookahead *Token[T]) 
 	}
 }
 
-// GetLastSibling returns the last sibling of the node. If it has a parent,
+/* // GetLastSibling returns the last sibling of the node. If it has a parent,
 // it returns the last child of the parent. Otherwise, it returns the last
 // sibling of the node.
 //
@@ -377,9 +374,9 @@ func (tn *Token[T]) GetLastSibling() *Token[T] {
 	}
 
 	return last_sibling
-}
+} */
 
-// GetFirstSibling returns the first sibling of the node. If it has a parent,
+/* // GetFirstSibling returns the first sibling of the node. If it has a parent,
 // it returns the first child of the parent. Otherwise, it returns the first
 // sibling of the node.
 //
@@ -402,7 +399,7 @@ func (tn *Token[T]) GetFirstSibling() *Token[T] {
 	}
 
 	return first_sibling
-}
+} */
 
 // AddChildren is a convenience function to add multiple children to the node at once.
 // It is more efficient than adding them one by one. Therefore, the behaviors are the
@@ -465,7 +462,7 @@ func (tn *Token[T]) AddChildren(children []*Token[T]) {
 	}
 }
 
-// GetChildren returns the immediate children of the node.
+/* // GetChildren returns the immediate children of the node.
 //
 // The returned nodes are never nil and are not copied. Thus, modifying the returned
 // nodes will modify the tree.
@@ -480,9 +477,9 @@ func (tn *Token[T]) GetChildren() []*Token[T] {
 	}
 
 	return children
-}
+} */
 
-// HasChild returns true if the node has the given child.
+/* // HasChild returns true if the node has the given child.
 //
 // Because children of a node cannot be nil, a nil target will always return false.
 //
@@ -503,9 +500,9 @@ func (tn *Token[T]) HasChild(target *Token[T]) bool {
 	}
 
 	return false
-}
+} */
 
-// IsChildOf returns true if the node is a child of the parent. If target is nil,
+/* // IsChildOf returns true if the node is a child of the parent. If target is nil,
 // it returns false.
 //
 // Parameters:
@@ -529,3 +526,4 @@ func (tn *Token[T]) IsChildOf(target *Token[T]) bool {
 
 	return false
 }
+*/

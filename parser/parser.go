@@ -9,12 +9,12 @@ import (
 )
 
 // Parser is an interface that defines the behavior of a parser.
-type Parser[T gr.TokenTyper] interface {
+type Parser[S gr.TokenTyper] interface {
 	// SetInputStream sets the input stream of the parser.
 	//
 	// Parameters:
 	//   - tokens: The input stream of the parser.
-	SetInputStream(tokens []*gr.Token[T])
+	SetInputStream(tokens []*gr.Token[S])
 
 	// GetDecision is a function that gets the decision of the parser.
 	//
@@ -24,7 +24,7 @@ type Parser[T gr.TokenTyper] interface {
 	// Returns:
 	//   - Actioner: The decision of the parser.
 	//   - error: An error if the parser encounters an error while getting the decision.
-	GetDecision(lookahead *gr.Token[T]) (Actioner, error)
+	GetDecision(lookahead *gr.Token[S]) (Actioner, error)
 
 	// Shift is a function that shifts the input stream of the parser.
 	//
@@ -37,14 +37,14 @@ type Parser[T gr.TokenTyper] interface {
 	// Returns:
 	//   - *Token[T]: The top token of the stack.
 	//   - bool: True if the stack is not empty, false otherwise.
-	Pop() (*gr.Token[T], bool)
+	Pop() (*gr.Token[S], bool)
 
 	// Peek peeks the top token of the stack.
 	//
 	// Returns:
 	//   - *Token[T]: The top token of the stack.
 	//   - bool: True if the stack is not empty, false otherwise.
-	Peek() (*gr.Token[T], bool)
+	Peek() (*gr.Token[S], bool)
 
 	// GetPopped returns the popped tokens of the parser.
 	//
@@ -52,13 +52,13 @@ type Parser[T gr.TokenTyper] interface {
 	//   - []*Token[T]: The popped tokens of the parser.
 	//
 	// The last token returned is the furthest token in the rule.
-	GetPopped() []*gr.Token[T]
+	GetPopped() []*gr.Token[S]
 
 	// Push pushes a token onto the stack. Does nothing if the token is nil.
 	//
 	// Parameters:
 	//   - token: The token to push onto the stack.
-	Push(token *gr.Token[T])
+	Push(token *gr.Token[S])
 
 	// Refuse is a function that refuses any token that was popped from the stack.
 	Refuse()
@@ -75,14 +75,14 @@ type Parser[T gr.TokenTyper] interface {
 //
 // Returns:
 //   - error: An error if the parser encounters an error while applying the reduce action.
-func apply_reduce[T gr.TokenTyper](parser Parser[T], rule *Rule[T]) error {
+func apply_reduce[S gr.TokenTyper](parser Parser[S], rule *Rule[S]) error {
 	luc.AssertParam("parser", parser != nil, errors.New("value cannot be nil"))
-	luc.AssertNil(rule, "rule")
+	luc.AssertParam("rule", rule != nil, errors.New("value cannot be nil"))
 
 	iter := rule.Iterator()
 	luc.Assert(iter != nil, "iter must not be nil")
 
-	var prev *T
+	var prev *S
 
 	for {
 		value, err := iter.Consume()
@@ -93,8 +93,12 @@ func apply_reduce[T gr.TokenTyper](parser Parser[T], rule *Rule[T]) error {
 		top, ok := parser.Pop()
 		if !ok {
 			return NewErrUnexpectedToken(prev, nil, value)
-		} else if top.Type != value {
-			return NewErrUnexpectedToken(prev, &top.Type, value)
+		}
+
+		top_type := top.GetType()
+
+		if top_type != value {
+			return NewErrUnexpectedToken(prev, &top_type, value)
 		}
 	}
 
@@ -118,10 +122,10 @@ func apply_reduce[T gr.TokenTyper](parser Parser[T], rule *Rule[T]) error {
 //
 // Returns:
 //   - []*Token[T]: The syntax forest of the parser.
-func get_forest[T gr.TokenTyper](parser Parser[T]) []*gr.Token[T] {
+func get_forest[S gr.TokenTyper](parser Parser[S]) []*gr.Token[S] {
 	luc.Assert(parser != nil, "parser must not be nil")
 
-	var forest []*gr.Token[T]
+	var forest []*gr.Token[S]
 
 	for {
 		top, ok := parser.Pop()
@@ -144,7 +148,7 @@ func get_forest[T gr.TokenTyper](parser Parser[T]) []*gr.Token[T] {
 // Returns:
 //   - []*Token[T]: The syntax forest of the input stream.
 //   - error: An error if the parser encounters an error while parsing the input stream.
-func FullParse[T gr.TokenTyper](parser Parser[T], tokens []*gr.Token[T]) ([]*gr.Token[T], error) {
+func FullParse[S gr.TokenTyper](parser Parser[S], tokens []*gr.Token[S]) ([]*gr.Token[S], error) {
 	if parser == nil {
 		forest := get_forest(parser)
 
@@ -164,7 +168,7 @@ func FullParse[T gr.TokenTyper](parser Parser[T], tokens []*gr.Token[T]) ([]*gr.
 		top, ok := parser.Peek()
 		luc.AssertOk(ok, "parser.Peek()")
 
-		act, err := parser.GetDecision(top.Lookahead)
+		act, err := parser.GetDecision(top.GetLookahead())
 		if err != nil {
 			forest := get_forest(parser)
 
@@ -175,7 +179,7 @@ func FullParse[T gr.TokenTyper](parser Parser[T], tokens []*gr.Token[T]) ([]*gr.
 		case *ShiftAction:
 			ok := parser.Shift()
 			luc.AssertOk(ok, "parser.Shift()")
-		case *ReduceAction[T]:
+		case *ReduceAction[S]:
 			err := apply_reduce(parser, act.rule)
 			if err != nil {
 				parser.Refuse()
@@ -184,7 +188,7 @@ func FullParse[T gr.TokenTyper](parser Parser[T], tokens []*gr.Token[T]) ([]*gr.
 
 				return forest, fmt.Errorf("error applying reduce: %w", err)
 			}
-		case *AcceptAction[T]:
+		case *AcceptAction[S]:
 			err := apply_reduce(parser, act.rule)
 			if err != nil {
 				parser.Refuse()
