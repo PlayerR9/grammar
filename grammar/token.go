@@ -8,34 +8,6 @@ import (
 	"github.com/PlayerR9/lib_units/common"
 )
 
-// TokenIterator is a pull-based iterator that iterates
-// over the children of a Token.
-type TokenIterator[S TokenTyper] struct {
-	parent, current *Token[S]
-}
-
-// Consume implements the common.Iterater interface.
-//
-// The only error type that can be returned by this function is the *common.ErrExhaustedIter type.
-//
-// Moreover, the return value is always of type *Token[S] and never nil; unless the iterator
-// has reached the end of the branch.
-func (iter *TokenIterator[S]) Consume() (*Token[S], error) {
-	if iter.current == nil {
-		return nil, common.NewErrExhaustedIter()
-	}
-
-	node := iter.current
-	iter.current = iter.current.NextSibling
-
-	return node, nil
-}
-
-// Restart implements the common.Iterater interface.
-func (iter *TokenIterator[S]) Restart() {
-	iter.current = iter.parent.FirstChild
-}
-
 // Token is a node in a tree.
 type Token[S TokenTyper] struct {
 	Parent, FirstChild, NextSibling, LastChild, PrevSibling *Token[S]
@@ -52,18 +24,6 @@ type Token[S TokenTyper] struct {
 //   - bool: True if the node is a leaf, false otherwise.
 func (tk *Token[S]) IsLeaf() bool {
 	return tk.FirstChild == nil
-}
-
-// Iterator implements the common.Iterable interface.
-//
-// This function returns an iterator that iterates over the direct children of the node.
-// Implemented as a pull-based iterator, this function never returns nil and any of the
-// values is guaranteed to be a non-nil node of type Token[S].
-func (tk *Token[S]) Iterator() common.Iterater[*Token[S]] {
-	return &TokenIterator[S]{
-		parent:  tk,
-		current: tk.FirstChild,
-	}
 }
 
 // String implements the fmt.Stringer interface.

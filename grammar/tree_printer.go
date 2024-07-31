@@ -1,7 +1,6 @@
 package grammar
 
 import (
-	"slices"
 	"strings"
 
 	luc "github.com/PlayerR9/lib_units/common"
@@ -22,59 +21,13 @@ type stack_element[S TokenTyper] struct {
 	is_last bool
 }
 
-// Printer is a tree printer.
-type Printer[S TokenTyper] struct {
+// token_printer is a tree printer.
+type token_printer[S TokenTyper] struct {
 	// lines is the list of lines.
 	lines []string
 
 	// seen is the list of seen nodes.
 	seen map[*Token[S]]bool
-}
-
-// PrintTree prints the tree.
-//
-// Parameters:
-//   - root: The root node.
-//
-// Returns:
-//   - string: The tree as a string.
-//   - error: An error if printing fails.
-func PrintTree[S TokenTyper](root *Token[S]) (string, error) {
-	if root == nil {
-		return "", nil
-	}
-
-	p := &Printer[S]{
-		lines: make([]string, 0),
-		seen:  make(map[*Token[S]]bool),
-	}
-
-	se := &stack_element[S]{
-		indent:     "",
-		node:       root,
-		same_level: false,
-		is_last:    true,
-	}
-
-	stack := []*stack_element[S]{se}
-
-	for len(stack) > 0 {
-		top := stack[len(stack)-1]
-		stack = stack[:len(stack)-1]
-
-		sub, err := p.trav(top)
-		if err != nil {
-			return "", err
-		} else if len(sub) == 0 {
-			continue
-		}
-
-		slices.Reverse(sub)
-
-		stack = append(stack, sub...)
-	}
-
-	return strings.Join(p.lines, "\n"), nil
 }
 
 // trav traverses the tree.
@@ -84,8 +37,7 @@ func PrintTree[S TokenTyper](root *Token[S]) (string, error) {
 //
 // Returns:
 //   - []*StackElement: The list of stack elements.
-//   - error: An error if traversing fails.
-func (p *Printer[S]) trav(elem *stack_element[S]) ([]*stack_element[S], error) {
+func (p *token_printer[S]) trav(elem *stack_element[S]) []*stack_element[S] {
 	luc.AssertNil(elem, "elem")
 
 	var builder strings.Builder
@@ -108,7 +60,7 @@ func (p *Printer[S]) trav(elem *stack_element[S]) ([]*stack_element[S], error) {
 
 		p.lines = append(p.lines, builder.String())
 
-		return nil, nil
+		return nil
 	}
 
 	builder.WriteString(elem.node.String())
@@ -117,9 +69,8 @@ func (p *Printer[S]) trav(elem *stack_element[S]) ([]*stack_element[S], error) {
 
 	p.seen[elem.node] = true
 
-	iter := elem.node.Iterator()
-	if iter == nil {
-		return nil, nil
+	if elem.node.FirstChild == nil {
+		return nil
 	}
 
 	var elems []*stack_element[S]
@@ -134,18 +85,10 @@ func (p *Printer[S]) trav(elem *stack_element[S]) ([]*stack_element[S], error) {
 		indent.WriteString("    ")
 	}
 
-	for {
-		value, err := iter.Consume()
-		ok := luc.IsDone(err)
-		if ok {
-			break
-		} else if err != nil {
-			return nil, err
-		}
-
+	for c := elem.node.FirstChild; c != nil; c = c.NextSibling {
 		se := &stack_element[S]{
 			indent:     indent.String(),
-			node:       value,
+			node:       c,
 			same_level: false,
 			is_last:    false,
 		}
@@ -153,9 +96,7 @@ func (p *Printer[S]) trav(elem *stack_element[S]) ([]*stack_element[S], error) {
 		elems = append(elems, se)
 	}
 
-	if len(elems) == 0 {
-		return nil, nil
-	}
+	luc.Assert(len(elems) > 0, "len(elems) > 0")
 
 	if len(elems) >= 2 {
 		for _, e := range elems {
@@ -165,5 +106,5 @@ func (p *Printer[S]) trav(elem *stack_element[S]) ([]*stack_element[S], error) {
 
 	elems[len(elems)-1].is_last = true
 
-	return elems, nil
+	return elems
 }

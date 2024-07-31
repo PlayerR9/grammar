@@ -121,11 +121,11 @@ func apply_reduce[S gr.TokenTyper](parser Parser[S], rule *Rule[S]) error {
 //   - parser: The parser.
 //
 // Returns:
-//   - []*Token[T]: The syntax forest of the parser.
-func get_forest[S gr.TokenTyper](parser Parser[S]) []*gr.Token[S] {
+//   - []*grammar.TokenTree[S]: The syntax forest of the parser.
+func get_forest[S gr.TokenTyper](parser Parser[S]) []*gr.TokenTree[S] {
 	luc.Assert(parser != nil, "parser must not be nil")
 
-	var forest []*gr.Token[S]
+	var forest []*gr.TokenTree[S]
 
 	for {
 		top, ok := parser.Pop()
@@ -133,7 +133,10 @@ func get_forest[S gr.TokenTyper](parser Parser[S]) []*gr.Token[S] {
 			break
 		}
 
-		forest = append(forest, top)
+		tree, err := gr.NewTokenTree(top)
+		luc.AssertErr(err, "gr.NewTokenTree(top)")
+
+		forest = append(forest, tree)
 	}
 
 	return forest
@@ -148,7 +151,7 @@ func get_forest[S gr.TokenTyper](parser Parser[S]) []*gr.Token[S] {
 // Returns:
 //   - []*Token[T]: The syntax forest of the input stream.
 //   - error: An error if the parser encounters an error while parsing the input stream.
-func FullParse[S gr.TokenTyper](parser Parser[S], tokens []*gr.Token[S]) ([]*gr.Token[S], error) {
+func FullParse[S gr.TokenTyper](parser Parser[S], tokens []*gr.Token[S]) ([]*gr.TokenTree[S], error) {
 	if parser == nil {
 		forest := get_forest(parser)
 
