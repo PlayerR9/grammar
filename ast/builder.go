@@ -9,10 +9,10 @@ package ast
 // Returns:
 //   - any: The result of the function.
 //   - error: An error if the function failed.
-type DoFunc[N NodeTyper] func(a *Result[N], prev any) (any, error)
+type DoFunc[N Noder] func(a *Result[N], prev any) (any, error)
 
 // PartsBuilder is a builder for AST parts.
-type PartsBuilder[N NodeTyper] struct {
+type PartsBuilder[N Noder] struct {
 	// parts is the parts of the builder.
 	parts []DoFunc[N]
 }
@@ -21,7 +21,7 @@ type PartsBuilder[N NodeTyper] struct {
 //
 // Returns:
 //   - *PartsBuilder[N]: The parts builder.
-func NewPartsBuilder[N NodeTyper]() *PartsBuilder[N] {
+func NewPartsBuilder[N Noder]() *PartsBuilder[N] {
 	return &PartsBuilder[N]{
 		parts: make([]DoFunc[N], 0),
 	}

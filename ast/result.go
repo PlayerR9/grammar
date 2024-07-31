@@ -4,40 +4,35 @@ import (
 	"errors"
 
 	luc "github.com/PlayerR9/lib_units/common"
-	lus "github.com/PlayerR9/lib_units/slices"
 )
 
 // Result is the result of the AST.
-type Result[N NodeTyper] struct {
+type Result[N Noder] struct {
 	// nodes is the nodes of the result.
-	nodes []*Node[N]
+	nodes []N
 }
 
 // NewResult creates a new AstResult.
 //
 // Returns:
 //   - *AstResult[N]: The new AstResult. Never returns nil.
-func NewResult[N NodeTyper]() *Result[N] {
+func NewResult[N Noder]() *Result[N] {
 	return &Result[N]{}
 }
 
-// MakeNode creates a new node and adds it to the result; replacing any existing nodes.
+// SetNode sets the node of the result. It replaces any existing node.
 //
 // Parameters:
-//   - t: The type of the node.
-//   - data: The data of the node.
-func (a *Result[N]) MakeNode(t N, data string) {
-	n := NewNode(t, data)
-
-	a.nodes = []*Node[N]{n}
+//   - node: The node to set.
+func (a *Result[N]) SetNode(node N) {
+	a.nodes = []N{node}
 }
 
 // SetNodes sets the nodes of the result. It ignores the nodes that are nil.
 //
 // Parameters:
 //   - nodes: The nodes to set.
-func (a *Result[N]) SetNodes(nodes []*Node[N]) {
-	nodes = lus.FilterNilValues(nodes)
+func (a *Result[N]) SetNodes(nodes []N) {
 	if len(nodes) > 0 {
 		a.nodes = nodes
 	}
@@ -47,9 +42,7 @@ func (a *Result[N]) SetNodes(nodes []*Node[N]) {
 //
 // Parameters:
 //   - nodes: The nodes to append.
-func (a *Result[N]) AppendNodes(nodes []*Node[N]) {
-	nodes = lus.FilterNilValues(nodes)
-
+func (a *Result[N]) AppendNodes(nodes []N) {
 	if len(nodes) > 0 {
 		a.nodes = append(a.nodes, nodes...)
 	}
@@ -92,8 +85,8 @@ func (a *Result[N]) AppendChildren(children []Noder) error {
 // Apply applies the result.
 //
 // Returns:
-//   - []*Node[N]: The nodes of the result.
-func (a *Result[N]) Apply() []*Node[N] {
+//   - []N: The nodes of the result.
+func (a *Result[N]) Apply() []N {
 	return a.nodes
 }
 
@@ -123,18 +116,27 @@ func (a *Result[N]) DoFunc(f DoFunc[N], prev any) (any, error) {
 	return res, nil
 }
 
-// TransformNodes transforms the nodes of the result.
+// DoForEach does something with the nodes of the result.
 //
 // Parameters:
-//   - new_type: The new type of the nodes.
-//   - new_data: The new data of the nodes.
-func (a *Result[N]) TransformNodes(new_type N, new_data string) {
-	if len(a.nodes) == 0 {
-		return
+//   - f: The function to do something with the nodes of the result.
+//
+// Returns:
+//   - error: An error if the function failed.
+//
+// Errors:
+//   - *common.ErrAt: With the error of the 'f' function.
+func (a *Result[N]) DoForEach(f func(N) error) error {
+	if len(a.nodes) == 0 || f == nil {
+		return nil
 	}
 
-	for _, node := range a.nodes {
-		node.Type = new_type
-		node.Data = new_data
+	for i, node := range a.nodes {
+		err := f(node)
+		if err != nil {
+			return luc.NewErrAt(i+1, "node", err)
+		}
 	}
+
+	return nil
 }

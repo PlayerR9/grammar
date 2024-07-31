@@ -9,7 +9,7 @@ import (
 )
 
 // Make is the constructor for the AST.
-type Make[N NodeTyper, T gr.TokenTyper] struct {
+type Make[N Noder, T gr.TokenTyper] struct {
 	// ast_map is the map of the AST.
 	ast_map map[T][]DoFunc[N]
 }
@@ -18,7 +18,7 @@ type Make[N NodeTyper, T gr.TokenTyper] struct {
 //
 // Returns:
 //   - *Make[N, T]: The new Make.
-func NewMake[N NodeTyper, T gr.TokenTyper]() *Make[N, T] {
+func NewMake[N Noder, T gr.TokenTyper]() *Make[N, T] {
 	return &Make[N, T]{
 		ast_map: make(map[T][]DoFunc[N]),
 	}
@@ -72,9 +72,9 @@ func (m *Make[N, T]) AddEntry(t T, steps []DoFunc[N]) error {
 //   - tree: The root of the AST.
 //
 // Returns:
-//   - []*Node[N]: The AST.
+//   - []N: The AST.
 //   - error: An error if the AST could not be created.
-func (m *Make[N, T]) Apply(tree *gr.TokenTree[T]) ([]*Node[N], error) {
+func (m *Make[N, T]) Apply(tree *gr.TokenTree[T]) ([]N, error) {
 	if tree == nil {
 		return nil, luc.NewErrNilParameter("tree")
 	}
