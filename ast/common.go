@@ -15,8 +15,8 @@ import (
 // Returns:
 //   - string: The AST as a string.
 func PrintAst[N Noder](root N) string {
-	str, err := PrintTree(root)
-	luc.AssertErr(err, "PrintTree(root)")
+	str, _ := PrintTree(root)
+	// luc.AssertErr(err, "PrintTree(root)")
 
 	return str
 }
@@ -42,7 +42,7 @@ type LeftAstFunc[N NodeTyper, T gr.TokenTyper] func(children []*gr.Token[T]) ([]
 //   - []*Node[N]: The left-recursive AST.
 //   - error: An error if the left-recursive AST could not be parsed.
 func LeftRecursive[N NodeTyper, T gr.TokenTyper](root *gr.Token[T], lhs_type T, f LeftAstFunc[N, T]) ([]*Node[N], error) {
-	luc.AssertNil(root, "root")
+	// luc.AssertNil(root, "root")
 
 	var nodes []*Node[N]
 

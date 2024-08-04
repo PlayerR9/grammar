@@ -13,7 +13,7 @@ func main() {
 		pkg.Logger.Fatalf("Failed to parse flags: %s", err.Error())
 	}
 
-	type_name, err := ggen.TypeListFlag.GetType(0)
+	type_name, err := ggen.TypeListFlag.Type(0)
 	if err != nil {
 		pkg.Logger.Fatalf("Failed to get type: %s", err.Error())
 	}

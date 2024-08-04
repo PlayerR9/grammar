@@ -1,7 +1,6 @@
 package parser
 
 import (
-	"errors"
 	"fmt"
 
 	gr "github.com/PlayerR9/grammar/grammar"
@@ -76,11 +75,11 @@ type Parser[S gr.TokenTyper] interface {
 // Returns:
 //   - error: An error if the parser encounters an error while applying the reduce action.
 func apply_reduce[S gr.TokenTyper](parser Parser[S], rule *Rule[S]) error {
-	luc.AssertParam("parser", parser != nil, errors.New("value cannot be nil"))
-	luc.AssertParam("rule", rule != nil, errors.New("value cannot be nil"))
+	// luc.AssertParam("parser", parser != nil, errors.New("value cannot be nil"))
+	// luc.AssertParam("rule", rule != nil, errors.New("value cannot be nil"))
 
 	iter := rule.Iterator()
-	luc.Assert(iter != nil, "iter must not be nil")
+	// luc.Assert(iter != nil, "iter must not be nil")
 
 	var prev *S
 
@@ -123,7 +122,7 @@ func apply_reduce[S gr.TokenTyper](parser Parser[S], rule *Rule[S]) error {
 // Returns:
 //   - []*grammar.TokenTree[S]: The syntax forest of the parser.
 func get_forest[S gr.TokenTyper](parser Parser[S]) []*gr.TokenTree[S] {
-	luc.Assert(parser != nil, "parser must not be nil")
+	// luc.Assert(parser != nil, "parser must not be nil")
 
 	var forest []*gr.TokenTree[S]
 
@@ -133,8 +132,8 @@ func get_forest[S gr.TokenTyper](parser Parser[S]) []*gr.TokenTree[S] {
 			break
 		}
 
-		tree, err := gr.NewTokenTree(top)
-		luc.AssertErr(err, "gr.NewTokenTree(top)")
+		tree, _ := gr.NewTokenTree(top)
+		// luc.AssertErr(err, "gr.NewTokenTree(top)")
 
 		forest = append(forest, tree)
 	}
@@ -168,8 +167,8 @@ func FullParse[S gr.TokenTyper](parser Parser[S], tokens []*gr.Token[S]) ([]*gr.
 	}
 
 	for {
-		top, ok := parser.Peek()
-		luc.AssertOk(ok, "parser.Peek()")
+		top, _ := parser.Peek()
+		// luc.AssertOk(ok, "parser.Peek()")
 
 		act, err := parser.GetDecision(top.Lookahead)
 		if err != nil {
@@ -180,8 +179,8 @@ func FullParse[S gr.TokenTyper](parser Parser[S], tokens []*gr.Token[S]) ([]*gr.
 
 		switch act := act.(type) {
 		case *ShiftAction:
-			ok := parser.Shift()
-			luc.AssertOk(ok, "parser.Shift()")
+			_ = parser.Shift()
+			// luc.AssertOk(ok, "parser.Shift()")
 		case *ReduceAction[S]:
 			err := apply_reduce(parser, act.rule)
 			if err != nil {

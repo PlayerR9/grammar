@@ -3,6 +3,7 @@ package pkg
 import (
 	"fmt"
 	"log"
+	"os"
 
 	ggen "github.com/PlayerR9/lib_units/generator"
 )
@@ -13,7 +14,7 @@ var (
 )
 
 func init() {
-	Logger = ggen.InitLogger("node")
+	Logger = ggen.InitLogger(os.Stdout, "node")
 }
 
 type GenData struct {

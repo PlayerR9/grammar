@@ -122,7 +122,7 @@ func (s *SimpleDFS[N, I]) Apply(root N) (I, error) {
 		}
 
 		iter := top.Iterator()
-		luc.Assert(iter != nil, "iterator expected to be non-nil")
+		// luc.Assert(iter != nil, "iterator expected to be non-nil")
 
 		for {
 			value, err := iter.Consume()
@@ -131,8 +131,9 @@ func (s *SimpleDFS[N, I]) Apply(root N) (I, error) {
 				break
 			}
 
-			luc.AssertErr(err, "iter.Consume()")
-			child := luc.AssertConv[N](value, "value")
+			// luc.AssertErr(err, "iter.Consume()")
+			child := value.(N)
+			// child := luc.AssertConv[N](value, "value")
 
 			stack.Push(child)
 		}

@@ -4,6 +4,7 @@ import (
 	"errors"
 
 	luc "github.com/PlayerR9/lib_units/common"
+	luint "github.com/PlayerR9/lib_units/ints"
 )
 
 // Result is the result of the AST.
@@ -134,7 +135,7 @@ func (a *Result[N]) DoForEach(f func(N) error) error {
 	for i, node := range a.nodes {
 		err := f(node)
 		if err != nil {
-			return luc.NewErrAt(i+1, "node", err)
+			return luint.NewErrAt(i+1, "node", err)
 		}
 	}
 

@@ -5,7 +5,6 @@ import (
 
 	gr "github.com/PlayerR9/grammar/grammar"
 	utby "github.com/PlayerR9/lib_units/bytes"
-	luc "github.com/PlayerR9/lib_units/common"
 )
 
 // make_arrow is a helper function that creates an arrow pointing to the faulty token.
@@ -17,7 +16,7 @@ import (
 // Returns:
 //   - []byte: The arrow data.
 func make_arrow(faulty_line []byte, faulty_point int) []byte {
-	luc.AssertParam("faulty_point", faulty_point >= 0 && faulty_point < len(faulty_line), luc.NewErrOutOfBounds(faulty_point, 0, len(faulty_line)))
+	// luc.AssertParam("faulty_point", faulty_point >= 0 && faulty_point < len(faulty_line), luc.NewErrOutOfBounds(faulty_point, 0, len(faulty_line)))
 
 	arrow_data := make([]byte, 0, faulty_point)
 

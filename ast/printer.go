@@ -82,7 +82,7 @@ func PrintTree[N Noder](root N) (string, error) {
 //   - []*StackElement: The list of stack elements.
 //   - error: An error if traversing fails.
 func (p *Printer[N]) trav(elem *stack_element[N]) ([]*stack_element[N], error) {
-	luc.AssertNil(elem, "elem")
+	// luc.AssertNil(elem, "elem")
 
 	var builder strings.Builder
 
@@ -139,7 +139,8 @@ func (p *Printer[N]) trav(elem *stack_element[N]) ([]*stack_element[N], error) {
 			return nil, err
 		}
 
-		node := luc.AssertConv[N](value, "value")
+		node := value.(N)
+		// node := luc.AssertConv[N](value, "value")
 
 		se := &stack_element[N]{
 			indent:     indent.String(),

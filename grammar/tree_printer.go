@@ -2,8 +2,6 @@ package grammar
 
 import (
 	"strings"
-
-	luc "github.com/PlayerR9/lib_units/common"
 )
 
 // stack_element is a stack element.
@@ -38,7 +36,7 @@ type token_printer[S TokenTyper] struct {
 // Returns:
 //   - []*StackElement: The list of stack elements.
 func (p *token_printer[S]) trav(elem *stack_element[S]) []*stack_element[S] {
-	luc.AssertNil(elem, "elem")
+	// luc.AssertNil(elem, "elem")
 
 	var builder strings.Builder
 
@@ -95,7 +93,7 @@ func (p *token_printer[S]) trav(elem *stack_element[S]) []*stack_element[S] {
 		elems = append(elems, se)
 	}
 
-	luc.Assert(len(elems) > 0, "len(elems) > 0")
+	// luc.Assert(len(elems) > 0, "len(elems) > 0")
 
 	if len(elems) >= 2 {
 		for _, e := range elems {
