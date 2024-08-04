@@ -1,6 +1,9 @@
 package main
 
 import (
+	"os"
+	"path/filepath"
+
 	pkg "github.com/PlayerR9/grammar/cmd/node/pkg"
 	ggen "github.com/PlayerR9/lib_units/generator"
 )
@@ -33,5 +36,17 @@ func main() {
 		pkg.Logger.Fatalf("Failed to generate: %s", err.Error())
 	}
 
-	pkg.Logger.Printf("Successfully generated: %q", dest)
+	dir := filepath.Dir(dest.DestLoc)
+
+	err = os.MkdirAll(dir, 0755)
+	if err != nil {
+		pkg.Logger.Fatalf("Failed to create directory: %s", err.Error())
+	}
+
+	err = os.WriteFile(dest.DestLoc, dest.Data, 0644)
+	if err != nil {
+		pkg.Logger.Fatalf("Failed to write file: %s", err.Error())
+	}
+
+	pkg.Logger.Printf("Successfully generated: %q", dest.DestLoc)
 }
