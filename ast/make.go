@@ -111,3 +111,47 @@ func (m *Make[N, T]) Apply(tree *gr.TokenTree[T]) ([]N, error) {
 
 	return nodes, nil
 }
+
+// Apply creates the AST given the token.
+//
+// Parameters:
+//   - token: The token to create the AST from.
+//
+// Returns:
+//   - []N: The AST.
+//   - error: An error if the AST could not be created.
+func (m *Make[N, T]) ApplyToken(token *gr.Token[T]) ([]N, error) {
+	if token == nil {
+		return nil, luc.NewErrNilParameter("tree")
+	}
+
+	steps, ok := m.ast_map[token.Type]
+	if !ok {
+		return nil, fmt.Errorf("unexpected token type: %q", token.Type.String())
+	}
+
+	res := NewResult[N]()
+
+	var prev any = token
+	var err error
+
+	for _, step := range steps {
+		prev, err = step(res, prev)
+		if err != nil {
+			nodes := res.Apply()
+
+			return nodes, fmt.Errorf("in %q: %w", token.Type.String(), err)
+		}
+	}
+
+	if prev != nil {
+		panic(luc.NewErrPossibleError(
+			fmt.Errorf("last function returned (%v) instead of nil", prev),
+			errors.New("you may have forgotten to specify a function"),
+		))
+	}
+
+	nodes := res.Apply()
+
+	return nodes, nil
+}
