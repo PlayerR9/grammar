@@ -3,8 +3,8 @@ package ast
 import (
 	"fmt"
 
+	gcers "github.com/PlayerR9/go-commons/errors"
 	gr "github.com/PlayerR9/grammar/grammar"
-	luc "github.com/PlayerR9/lib_units/common"
 )
 
 // PrintAst stringifies the AST.
@@ -105,9 +105,9 @@ type ToAstFunc[N NodeTyper, T gr.TokenTyper] func(root *gr.Token[T]) ([]*Node[N]
 //   - error: Any error returned by the to_ast function.
 func ToAst[N NodeTyper, T gr.TokenTyper](root *gr.Token[T], to_ast ToAstFunc[N, T]) ([]*Node[N], error) {
 	if root == nil {
-		return nil, luc.NewErrNilParameter("root")
+		return nil, gcers.NewErrNilParameter("root")
 	} else if to_ast == nil {
-		return nil, luc.NewErrNilParameter("to_ast")
+		return nil, gcers.NewErrNilParameter("to_ast")
 	}
 
 	nodes, err := to_ast(root)
@@ -128,7 +128,7 @@ func ToAst[N NodeTyper, T gr.TokenTyper](root *gr.Token[T], to_ast ToAstFunc[N, 
 //   - error: An error if the data is not of type string or if the token is nil.
 func ExtractData[T gr.TokenTyper](node *gr.Token[T]) (string, error) {
 	if node == nil {
-		return "", luc.NewErrNilParameter("node")
+		return "", gcers.NewErrNilParameter("node")
 	}
 
 	return node.Data, nil
@@ -144,7 +144,7 @@ func ExtractData[T gr.TokenTyper](node *gr.Token[T]) (string, error) {
 //   - error: An error if the children is not of type []*gr.Token[T] or if the token is nil.
 func ExtractChildren[T gr.TokenTyper](node *gr.Token[T]) ([]*gr.Token[T], error) {
 	if node == nil {
-		return nil, luc.NewErrNilParameter("node")
+		return nil, gcers.NewErrNilParameter("node")
 	}
 
 	var children []*gr.Token[T]

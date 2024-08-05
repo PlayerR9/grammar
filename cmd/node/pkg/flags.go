@@ -19,20 +19,30 @@ func init() {
 	ggen.SetGenericsSignFlag("g", false, 1)
 }
 
-func ParseFlags() (string, error) {
+func ParseFlags() (string, string, error) {
 	err := ggen.ParseFlags()
 	if err != nil {
-		return "", err
+		return "", "", err
 	}
 
 	if *TypeNameFlag == "" {
-		return "", fmt.Errorf("type flag is required")
+		return "", "", fmt.Errorf("type flag is required")
 	}
 
-	name, err := ggen.FixVariableName(*TypeNameFlag, nil, ggen.Exported)
+	node_name, err := ggen.FixVariableName(*TypeNameFlag, nil, ggen.Exported)
 	if err != nil {
-		return "", fmt.Errorf("invalid type name: %w", err)
+		return "", "", fmt.Errorf("invalid type name: %w", err)
 	}
 
-	return name, nil
+	type_name, err := ggen.TypeListFlag.Type(0)
+	if err != nil {
+		return "", "", fmt.Errorf("invalid type name: %w", err)
+	}
+
+	type_name, err = ggen.FixVariableName(type_name, nil, ggen.Exported)
+	if err != nil {
+		return "", "", fmt.Errorf("invalid type name: %w", err)
+	}
+
+	return type_name, node_name, nil
 }

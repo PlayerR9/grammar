@@ -4,7 +4,8 @@ import (
 	"unicode"
 
 	gr "github.com/PlayerR9/grammar/grammar"
-	utby "github.com/PlayerR9/lib_units/bytes"
+
+	gcby "github.com/PlayerR9/go-commons/bytes"
 )
 
 // make_arrow is a helper function that creates an arrow pointing to the faulty token.
@@ -60,8 +61,8 @@ func PrintSyntaxError[T gr.TokenTyper](data []byte, tokens []*gr.Token[T]) []byt
 
 	var before, faulty_line, after []byte
 
-	before_idx := utby.ReverseSearch(data, idx, []byte("\n"))
-	after_idx := utby.ForwardSearch(data, idx, []byte("\n"))
+	before_idx := gcby.ReverseSearch(data, idx, []byte("\n"))
+	after_idx := gcby.ForwardSearch(data, idx, []byte("\n"))
 
 	if before_idx == -1 {
 		if after_idx == -1 {

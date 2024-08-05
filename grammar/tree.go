@@ -4,7 +4,7 @@ import (
 	"slices"
 	"strings"
 
-	luc "github.com/PlayerR9/lib_units/common"
+	gcers "github.com/PlayerR9/go-commons/errors"
 )
 
 // TokenTree is a token tree.
@@ -60,7 +60,7 @@ func (t *TokenTree[S]) String() string {
 //   - error: An error of type *common.ErrInvalidParameter if the root is nil.
 func NewTokenTree[S TokenTyper](root *Token[S]) (*TokenTree[S], error) {
 	if root == nil {
-		return nil, luc.NewErrNilParameter("root")
+		return nil, gcers.NewErrNilParameter("root")
 	}
 
 	return &TokenTree[S]{

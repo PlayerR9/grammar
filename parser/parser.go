@@ -4,7 +4,8 @@ import (
 	"fmt"
 
 	gr "github.com/PlayerR9/grammar/grammar"
-	luc "github.com/PlayerR9/lib_units/common"
+
+	gcers "github.com/PlayerR9/go-commons/errors"
 )
 
 // Parser is an interface that defines the behavior of a parser.
@@ -154,7 +155,7 @@ func FullParse[S gr.TokenTyper](parser Parser[S], tokens []*gr.Token[S]) ([]*gr.
 	if parser == nil {
 		forest := get_forest(parser)
 
-		return forest, luc.NewErrNilParameter("parser")
+		return forest, gcers.NewErrNilParameter("parser")
 	}
 
 	parser.SetInputStream(tokens)

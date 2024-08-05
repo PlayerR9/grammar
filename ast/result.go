@@ -3,8 +3,8 @@ package ast
 import (
 	"errors"
 
-	luc "github.com/PlayerR9/lib_units/common"
-	luint "github.com/PlayerR9/lib_units/ints"
+	gcers "github.com/PlayerR9/go-commons/errors"
+	gcint "github.com/PlayerR9/go-commons/ints"
 )
 
 // Result is the result of the AST.
@@ -106,7 +106,7 @@ func (a *Result[N]) Apply() []N {
 //   - error: Any error returned by the f function.
 func (a *Result[N]) DoFunc(f DoFunc[N], prev any) (any, error) {
 	if f == nil {
-		return nil, luc.NewErrNilParameter("f")
+		return nil, gcers.NewErrNilParameter("f")
 	}
 
 	res, err := f(a, prev)
@@ -135,7 +135,7 @@ func (a *Result[N]) DoForEach(f func(N) error) error {
 	for i, node := range a.nodes {
 		err := f(node)
 		if err != nil {
-			return luint.NewErrAt(i+1, "node", err)
+			return gcint.NewErrAt(i+1, "node", err)
 		}
 	}
 

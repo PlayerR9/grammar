@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 
+	gcers "github.com/PlayerR9/go-commons/errors"
 	gr "github.com/PlayerR9/grammar/grammar"
 	luc "github.com/PlayerR9/lib_units/common"
 )
@@ -76,7 +77,7 @@ func (m *Make[N, T]) AddEntry(t T, steps []DoFunc[N]) error {
 //   - error: An error if the AST could not be created.
 func (m *Make[N, T]) Apply(tree *gr.TokenTree[T]) ([]N, error) {
 	if tree == nil {
-		return nil, luc.NewErrNilParameter("tree")
+		return nil, gcers.NewErrNilParameter("tree")
 	}
 
 	root := tree.Root()
@@ -122,7 +123,7 @@ func (m *Make[N, T]) Apply(tree *gr.TokenTree[T]) ([]N, error) {
 //   - error: An error if the AST could not be created.
 func (m *Make[N, T]) ApplyToken(token *gr.Token[T]) ([]N, error) {
 	if token == nil {
-		return nil, luc.NewErrNilParameter("tree")
+		return nil, gcers.NewErrNilParameter("tree")
 	}
 
 	steps, ok := m.ast_map[token.Type]

@@ -103,7 +103,7 @@ import (
 	"strconv"
 	"strings"
 
-	{{ if ne .PackageName "ast" }}"github.com/PlayerR9/grammar/ast"{{ end }}
+	{{ if ne .PackageName "ast" }}"github.com/PlayerR9/grammar/ast"{{- end }}
 	"github.com/PlayerR9/lib_units/common"
 )
 

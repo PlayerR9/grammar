@@ -5,7 +5,6 @@ import (
 	"strconv"
 	"strings"
 
-	
 	"github.com/PlayerR9/lib_units/common"
 )
 
@@ -60,7 +59,7 @@ func (tn *Node[N]) AddChild(target Noder) {
 	if !ok {
 		return
 	}
-	
+
 	tmp.NextSibling = nil
 	tmp.PrevSibling = nil
 
@@ -82,7 +81,7 @@ func (tn *Node[N]) AddChildren(children []Noder) {
 	if len(children) == 0 {
 		return
 	}
-	
+
 	var valid_children []*Node[N]
 
 	for _, child := range children {
@@ -143,7 +142,7 @@ func (tn *Node[N]) AddChildren(children []Noder) {
 // values is guaranteed to be a non-nil node of type Node[N].
 func (tn *Node[N]) Iterator() common.Iterater[Noder] {
 	return &NodeIterator[N]{
-		parent: tn,
+		parent:  tn,
 		current: tn.FirstChild,
 	}
 }
@@ -174,7 +173,7 @@ func (tn *Node[N]) String() string {
 //
 // Returns:
 //   - *Node[N]: A pointer to the newly created node. It is
-//   never nil.
+//     never nil.
 func NewNode[N NodeTyper](n_type N, data string) *Node[N] {
 	return &Node[N]{
 		Type: n_type,

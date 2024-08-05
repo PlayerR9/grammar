@@ -4,7 +4,8 @@ import (
 	"fmt"
 
 	gr "github.com/PlayerR9/grammar/grammar"
-	luc "github.com/PlayerR9/lib_units/common"
+
+	gcers "github.com/PlayerR9/go-commons/errors"
 )
 
 // Actioner is an interface that defines the behavior of an action.
@@ -50,7 +51,7 @@ func (r *ReduceAction[S]) String() string {
 //   - error: An error of type *common.ErrInvalidParameter if the rule is nil.
 func NewReduceAction[S gr.TokenTyper](rule *Rule[S]) (*ReduceAction[S], error) {
 	if rule == nil {
-		return nil, luc.NewErrNilParameter("rule")
+		return nil, gcers.NewErrNilParameter("rule")
 	}
 
 	return &ReduceAction[S]{
@@ -79,7 +80,7 @@ func (a *AcceptAction[S]) String() string {
 //   - error: An error of type *common.ErrInvalidParameter if the rule is nil.
 func NewAcceptAction[S gr.TokenTyper](rule *Rule[S]) (*AcceptAction[S], error) {
 	if rule == nil {
-		return nil, luc.NewErrNilParameter("rule")
+		return nil, gcers.NewErrNilParameter("rule")
 	}
 
 	return &AcceptAction[S]{

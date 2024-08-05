@@ -3,8 +3,8 @@ package lexer
 import (
 	"fmt"
 
+	gcers "github.com/PlayerR9/go-commons/errors"
 	gr "github.com/PlayerR9/grammar/grammar"
-	luc "github.com/PlayerR9/lib_units/common"
 )
 
 // Lexer is an interface that defines the behavior of a lexer.
@@ -87,7 +87,7 @@ func FullLex[S gr.TokenTyper](lexer Lexer[S], data []byte) ([]*gr.Token[S], erro
 	if lexer == nil {
 		tokens := get_tokens[S](nil)
 
-		return tokens, luc.NewErrNilParameter("lexer")
+		return tokens, gcers.NewErrNilParameter("lexer")
 	}
 
 	lexer.SetInputStream(data)

@@ -4,8 +4,8 @@ import (
 	"strconv"
 	"strings"
 
+	gcstr "github.com/PlayerR9/go-commons/strings"
 	gr "github.com/PlayerR9/grammar/grammar"
-	utstr "github.com/PlayerR9/lib_units/strings"
 )
 
 // ErrUnexpectedToken is an error that occurs when an unexpected token is
@@ -38,7 +38,7 @@ func (e *ErrUnexpectedToken[T]) Error() string {
 			values = append(values, expected.String())
 		}
 
-		expected = utstr.EitherOrString(values, true)
+		expected = gcstr.EitherOrString(values, true)
 	}
 
 	var got string
