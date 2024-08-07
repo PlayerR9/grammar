@@ -4,7 +4,7 @@ import (
 	"slices"
 	"strings"
 
-	luc "github.com/PlayerR9/lib_units/common"
+	itrs "github.com/PlayerR9/iterators/simple"
 )
 
 // stack_element is a stack element.
@@ -132,8 +132,7 @@ func (p *Printer[N]) trav(elem *stack_element[N]) ([]*stack_element[N], error) {
 
 	for {
 		value, err := iter.Consume()
-		ok := luc.IsDone(err)
-		if ok {
+		if err == itrs.Exhausted {
 			break
 		} else if err != nil {
 			return nil, err

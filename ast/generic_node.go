@@ -5,7 +5,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/PlayerR9/lib_units/common"
+	"github.com/PlayerR9/iterators/simple"
 )
 
 // NodeIterator is a pull-based iterator that iterates
@@ -22,7 +22,7 @@ type NodeIterator[N NodeTyper] struct {
 // has reached the end of the branch.
 func (iter *NodeIterator[N]) Consume() (Noder, error) {
 	if iter.current == nil {
-		return nil, common.NewErrExhaustedIter()
+		return nil, simple.Exhausted
 	}
 
 	node := iter.current
@@ -140,7 +140,7 @@ func (tn *Node[N]) AddChildren(children []Noder) {
 // This function returns an iterator that iterates over the direct children of the node.
 // Implemented as a pull-based iterator, this function never returns nil and any of the
 // values is guaranteed to be a non-nil node of type Node[N].
-func (tn *Node[N]) Iterator() common.Iterater[Noder] {
+func (tn *Node[N]) Iterator() simple.Iterater[Noder] {
 	return &NodeIterator[N]{
 		parent:  tn,
 		current: tn.FirstChild,

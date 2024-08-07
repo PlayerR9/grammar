@@ -3,8 +3,9 @@ package ast
 import (
 	"fmt"
 
-	luc "github.com/PlayerR9/lib_units/common"
 	lls "github.com/PlayerR9/listlike/stack"
+
+	itrs "github.com/PlayerR9/iterators/simple"
 )
 
 // NodeTyper is an interface that defines the behavior of a node type.
@@ -37,7 +38,12 @@ type Noder interface {
 	//   - children: The children to add.
 	AddChildren(children []Noder)
 
-	luc.Iterable[Noder]
+	// Iterator is a method that returns an iterator that iterates over the direct
+	// children of the node.
+	//
+	// Returns:
+	//   - itrs.Iterater[Noder]: The iterator.
+	Iterator() itrs.Iterater[Noder]
 
 	fmt.Stringer
 }
@@ -126,8 +132,7 @@ func (s *SimpleDFS[N, I]) Apply(root N) (I, error) {
 
 		for {
 			value, err := iter.Consume()
-			ok := luc.IsDone(err)
-			if ok {
+			if err == itrs.Exhausted {
 				break
 			}
 

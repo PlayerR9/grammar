@@ -4,7 +4,7 @@ import (
 	"flag"
 	"fmt"
 
-	ggen "github.com/PlayerR9/lib_units/generator"
+	ggen "github.com/PlayerR9/go-generator/generator"
 )
 
 var (
