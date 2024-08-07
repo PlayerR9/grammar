@@ -1,13 +1,15 @@
 package lexer
 
 import (
+	"fmt"
+	"io"
 	"slices"
 	"strings"
 	"unicode/utf8"
 
-	gr "github.com/PlayerR9/grammar/grammar"
-
+	gcers "github.com/PlayerR9/go-commons/errors"
 	gcch "github.com/PlayerR9/go-commons/runes"
+	gr "github.com/PlayerR9/grammar/grammar"
 )
 
 type MatchRule[S gr.TokenTyper] struct {
@@ -29,12 +31,13 @@ func (r *MatchRule[S]) CharAt(at int) (rune, bool) {
 type Matcher[S gr.TokenTyper] struct {
 	rules   []*MatchRule[S]
 	indices []int
+	at      int
+	prev    *rune
+	got     *rune
 }
 
 func NewMatcher[S gr.TokenTyper]() *Matcher[S] {
-	return &Matcher[S]{
-		rules: make([]*MatchRule[S], 0),
-	}
+	return new(Matcher[S])
 }
 
 func (m *Matcher[S]) find_index(symbol S) (int, bool) {
@@ -78,11 +81,55 @@ func (m *Matcher[S]) AddToMatch(symbol S, word string) error {
 	return nil
 }
 
-func (m *Matcher[S]) UniqueCharsAt(at int) []rune {
+func (m *Matcher[S]) filter(scanner io.RuneScanner) (bool, error) {
+	if scanner == nil {
+		return true, gcers.NewErrNilParameter("scanner")
+	}
+
+	char, _, err := scanner.ReadRune()
+	if IsExhausted(err) {
+		return true, nil
+	} else if err != nil {
+		return false, err
+	}
+
+	m.got = &char
+
+	var top int
+
+	for i := 0; i < len(m.indices); i++ {
+		rule := m.rules[m.indices[i]]
+
+		c, ok := rule.CharAt(m.at)
+		if !ok {
+			continue
+		}
+
+		if c == char {
+			m.indices[top] = m.indices[i]
+			top++
+		}
+	}
+
+	if top == 0 {
+		// No valid matches exist.
+		_ = scanner.UnreadRune()
+
+		return true, nil
+	}
+
+	m.indices = m.indices[:top]
+	m.prev = &char
+	m.at++
+
+	return false, nil
+}
+
+func (m *Matcher[S]) make_error() error {
 	var chars []rune
 
 	for _, rule := range m.rules {
-		c, ok := rule.CharAt(at)
+		c, ok := rule.CharAt(m.at)
 		if !ok {
 			continue
 		}
@@ -93,110 +140,74 @@ func (m *Matcher[S]) UniqueCharsAt(at int) []rune {
 		}
 	}
 
-	return chars
+	return NewErrUnexpectedRune(m.prev, m.got, chars...)
 }
 
-type matched_data struct {
-	data   string
-	weight int
-	reason error
-}
-
-func (m *Matcher[S]) match(lexer *Lexer[S], chars []rune) (*matched_data, error) {
-	if len(chars) == 0 {
-		data := &matched_data{
-			data:   "",
-			weight: 0,
-			reason: nil,
-		}
-
-		return data, nil
+func (m *Matcher[S]) Match(scanner io.RuneScanner) (S, error) {
+	if scanner == nil {
+		return S(0), gcers.NewErrNilParameter("scanner")
 	}
 
-	var prev *rune
-	var builder strings.Builder
-
-	for i, char := range chars {
-		c, err := lexer.Next()
-		if IsExhausted(err) {
-			data := &matched_data{
-				data:   builder.String(),
-				weight: i + 1,
-				reason: NewErrUnexpectedRune(prev, nil, char),
-			}
-
-			return data, NewErrUnexpectedRune(prev, nil, char)
-		} else if err != nil {
-			return nil, err
-		}
-
-		if c != char {
-			data := &matched_data{
-				data:   builder.String(),
-				weight: i + 1,
-				reason: NewErrUnexpectedRune(prev, &c, char),
-			}
-
-			return data, NewErrUnexpectedRune(prev, &c, char)
-		}
-
-		builder.WriteRune(c)
-		prev = &c
-	}
-
-	data := &matched_data{
-		data:   builder.String(),
-		weight: len(chars),
-		reason: nil,
-	}
-
-	return data, nil
-}
-
-func (m *Matcher[S]) filter(at int) bool {
-	var top int
-
-	for i := 0; i < len(m.indices); i++ {
-		rule := m.rules[m.indices[i]]
-
-		c, ok := rule.CharAt(at)
-		if !ok {
-			continue
-		}
-
-	}
-
-	if top == 0 {
-		return true
-	} else {
-		m.indices = m.indices[:top]
-	}
-
-	return false
-}
-
-func (m *Matcher[S]) Match(lexer *Lexer[S]) error {
-	c, err := lexer.Next()
+	c, _, err := scanner.ReadRune()
 	if err != nil {
-		return err
+		return S(0), err
 	}
 
 	m.indices = m.indices[:0]
+	m.prev = nil
+	m.got = &c
+	m.at = 0
 
 	for i, rule := range m.rules {
-		char, _ := rule.CharAt(0)
+		char, _ := rule.CharAt(m.at)
 
 		if char == c {
 			m.indices = append(m.indices, i)
 		}
 	}
 
-	switch len(m.indices) {
-	case 0:
-		expecteds := m.UniqueCharsAt(0)
-
-		return NewErrUnexpectedRune(nil, nil, expecteds...)
-	case 1:
-	default:
+	if len(m.indices) == 0 {
+		return S(0), m.make_error()
 	}
+
+	m.prev = &c
+
+	at := 1
+
+	for {
+		is_done, err := m.filter(scanner)
+		if err != nil {
+			return S(0), err
+		}
+
+		if is_done {
+			break
+		}
+
+		at++
+	}
+
+	if len(m.indices) == 0 {
+		return S(0), m.make_error()
+	}
+
+	if len(m.indices) > 1 {
+		words := make([]string, 0, len(m.indices))
+
+		for _, idx := range m.indices {
+			rule := m.rules[idx]
+
+			words = append(words, string(rule.chars))
+		}
+
+		return S(0), fmt.Errorf("ambiguous match: %s", strings.Join(words, ", "))
+	}
+
+	rule := m.rules[m.indices[0]]
+
+	if len(rule.chars) != m.at {
+		return S(0), m.make_error()
+	}
+
+	return rule.symbol, nil
 }

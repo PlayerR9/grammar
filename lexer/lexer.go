@@ -3,7 +3,6 @@ package lexer
 import (
 	"fmt"
 	"regexp"
-	"strings"
 	"unicode/utf8"
 
 	gr "github.com/PlayerR9/grammar/grammar"
@@ -24,6 +23,12 @@ type Lexer[S gr.TokenTyper] struct {
 	// input_stream is the input stream of the lexer.
 	input_stream []byte
 
+	// prev is the previous rune of the lexer.
+	prev *rune
+
+	// prev_size is the size of the previous rune of the lexer.
+	prev_size int
+
 	// tokens is the tokens of the lexer.
 	tokens []*gr.Token[S]
 
@@ -32,6 +37,48 @@ type Lexer[S gr.TokenTyper] struct {
 
 	// lex_one is the function that lexes the next token of the lexer.
 	lex_one LexOneFunc[S]
+}
+
+// ReadRune implements the io.RuneScanner interface.
+//
+// Errors:
+//   - *ErrInputStreamExhausted: If the input stream is empty.
+//   - *ErrInvalidUTF8Encoding: If the next rune character is not valid.
+func (l *Lexer[S]) ReadRune() (rune, int, error) {
+	if l.prev != nil {
+		return *l.prev, l.prev_size, nil
+	}
+
+	if len(l.input_stream) == 0 {
+		return 0, 0, NewErrInputStreamExhausted()
+	}
+
+	c, size := utf8.DecodeRune(l.input_stream)
+	if c == utf8.RuneError {
+		return utf8.RuneError, 0, NewErrInvalidUTF8Encoding(l.at)
+	}
+
+	l.input_stream = l.input_stream[size:]
+	l.at += size
+
+	l.prev = &c
+
+	return c, size, nil
+}
+
+// UnreadRune implements the io.RuneScanner interface.
+//
+// Errors:
+//   - *ErrInputStreamExhausted: If the input stream is empty.
+func (l *Lexer[S]) UnreadRune() error {
+	if len(l.input_stream) == 0 {
+		return NewErrInputStreamExhausted()
+	}
+
+	l.input_stream = l.input_stream[:len(l.input_stream)-1]
+	l.at -= 1
+
+	return nil
 }
 
 // NewLexer creates a new lexer.
@@ -100,31 +147,6 @@ func (l *Lexer[S]) Peek() (rune, error) {
 	return c, nil
 }
 
-// Next returns the next rune character of the input stream.
-//
-// Returns:
-//   - rune: The next rune character of the input stream.
-//   - error: An error if the next rune character is not valid.
-//
-// Errors:
-//   - *ErrInputStreamExhausted: If the input stream is empty.
-//   - *ErrInvalidUTF8Encoding: If the next rune character is not valid.
-func (l *Lexer[S]) Next() (rune, error) {
-	if len(l.input_stream) == 0 {
-		return 0, NewErrInputStreamExhausted()
-	}
-
-	c, size := utf8.DecodeRune(l.input_stream)
-	if c == utf8.RuneError {
-		return utf8.RuneError, NewErrInvalidUTF8Encoding(l.at)
-	}
-
-	l.input_stream = l.input_stream[size:]
-	l.at += size
-
-	return c, nil
-}
-
 // FullLex lexes the input stream of the lexer and returns the tokens.
 //
 // Parameters:
@@ -167,7 +189,7 @@ func (l *Lexer[S]) FullLex(data []byte) ([]*gr.Token[S], error) {
 	return tokens, nil
 }
 
-// MatchChars matches the next characters of the lexer.
+/* // MatchChars matches the next characters of the lexer.
 //
 // Parameters:
 //   - lexer: The lexer.
@@ -201,7 +223,7 @@ func (l *Lexer[S]) MatchChars(chars []rune) (string, error) {
 	}
 
 	return builder.String(), nil
-}
+} */
 
 // MatchRegex matches the next regex of the lexer.
 //
