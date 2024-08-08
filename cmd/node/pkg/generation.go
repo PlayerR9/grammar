@@ -5,7 +5,7 @@ import (
 	"log"
 	"os"
 
-	ggen "github.com/PlayerR9/lib_units/generator"
+	ggen "github.com/PlayerR9/go-generator/generator"
 )
 
 var (
@@ -14,7 +14,7 @@ var (
 )
 
 func init() {
-	Logger = ggen.InitLogger(os.Stdout, "node")
+	Logger = log.New(os.Stdout, "[node]: ", log.LstdFlags)
 }
 
 type GenData struct {
@@ -49,7 +49,7 @@ func init() {
 	}
 
 	tmp.AddDoFunc(func(gd *GenData) error {
-		sig, err := ggen.MakeTypeSig(gd.NodeName, "")
+		sig, err := ggen.MakeTypeSign(GenericsFlag, gd.NodeName, "")
 		if err != nil {
 			return fmt.Errorf("failed to make type sig: %w", err)
 		}
@@ -60,13 +60,12 @@ func init() {
 	})
 
 	tmp.AddDoFunc(func(gd *GenData) error {
-		gd.Generics = ggen.GenericsSigFlag.String()
-
+		gd.Generics = GenericsFlag.String()
 		return nil
 	})
 
 	tmp.AddDoFunc(func(gd *GenData) error {
-		sig, err := ggen.MakeTypeSig(gd.NodeName, "Iterator")
+		sig, err := ggen.MakeTypeSign(GenericsFlag, gd.NodeName, "Iterator")
 		if err != nil {
 			return fmt.Errorf("failed to make iterator sig: %w", err)
 		}

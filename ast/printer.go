@@ -1,10 +1,9 @@
 package ast
 
 import (
+	"io"
 	"slices"
 	"strings"
-
-	itrs "github.com/PlayerR9/iterators/simple"
 )
 
 // stack_element is a stack element.
@@ -132,7 +131,7 @@ func (p *Printer[N]) trav(elem *stack_element[N]) ([]*stack_element[N], error) {
 
 	for {
 		value, err := iter.Consume()
-		if err == itrs.Exhausted {
+		if err == io.EOF {
 			break
 		} else if err != nil {
 			return nil, err

@@ -2,10 +2,10 @@ package ast
 
 import (
 	"fmt"
-
-	lls "github.com/PlayerR9/listlike/stack"
+	"io"
 
 	itrs "github.com/PlayerR9/iterators/simple"
+	lls "github.com/PlayerR9/listlike/stack"
 )
 
 // NodeTyper is an interface that defines the behavior of a node type.
@@ -132,7 +132,7 @@ func (s *SimpleDFS[N, I]) Apply(root N) (I, error) {
 
 		for {
 			value, err := iter.Consume()
-			if err == itrs.Exhausted {
+			if err == io.EOF {
 				break
 			}
 

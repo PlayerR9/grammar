@@ -8,19 +8,25 @@ import (
 )
 
 var (
+	OutputLocFlag *ggen.OutputLocVal
+	TypeListFlag  *ggen.TypeListVal
+	GenericsFlag  *ggen.GenericsSignVal
+
 	TypeNameFlag *string
 )
 
 func init() {
 	TypeNameFlag = flag.String("name", "", "The name of the node. This flag is required.")
 
-	ggen.SetTypeListFlag("type", true, 1, "The type of the node to generate.")
-	ggen.SetOutputFlag("<type>_node.go", true)
-	ggen.SetGenericsSignFlag("g", false, 1)
+	TypeListFlag = ggen.NewTypeListFlag("type", true, 1, "The type of the node to generate.")
+	OutputLocFlag = ggen.NewOutputFlag("<type>_node.go", true)
+	GenericsFlag = ggen.NewGenericsSignFlag("g", false, 1)
 }
 
 func ParseFlags() (string, string, error) {
-	err := ggen.ParseFlags()
+	ggen.ParseFlags()
+
+	err := ggen.AlignGenerics(GenericsFlag, TypeListFlag)
 	if err != nil {
 		return "", "", err
 	}
@@ -34,7 +40,7 @@ func ParseFlags() (string, string, error) {
 		return "", "", fmt.Errorf("invalid type name: %w", err)
 	}
 
-	type_name, err := ggen.TypeListFlag.Type(0)
+	type_name, err := TypeListFlag.Type(0)
 	if err != nil {
 		return "", "", fmt.Errorf("invalid type name: %w", err)
 	}

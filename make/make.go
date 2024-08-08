@@ -1,8 +1,9 @@
 package make
 
 import (
+	"io"
+
 	ast "github.com/PlayerR9/grammar/ast"
-	luc "github.com/PlayerR9/lib_units/common"
 	lls "github.com/PlayerR9/listlike/stack"
 )
 
@@ -90,8 +91,7 @@ func (s *SimpleDFS[N, I]) Apply(root N) (I, error) {
 
 		for {
 			value, err := iter.Consume()
-			ok := luc.IsDone(err)
-			if ok {
+			if err == io.EOF {
 				break
 			}
 

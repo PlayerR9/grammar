@@ -1,8 +1,8 @@
 package main
 
 import (
+	ggen "github.com/PlayerR9/go-generator/generator"
 	pkg "github.com/PlayerR9/grammar/cmd/node/pkg"
-	ggen "github.com/PlayerR9/lib_units/generator"
 )
 
 func main() {
@@ -18,15 +18,15 @@ func main() {
 		TypeName: type_name,
 	}
 
-	dest, err := pkg.Generator.Generate(type_name, "_node.go", data)
+	res, err := pkg.Generator.Generate(pkg.OutputLocFlag, type_name+"_node.go", data)
 	if err != nil {
 		pkg.Logger.Fatalf("Failed to generate: %s", err.Error())
 	}
 
-	err = dest.WriteFile()
+	dest, err := res.WriteFile("")
 	if err != nil {
 		pkg.Logger.Fatal(err.Error())
-	} else {
-		pkg.Logger.Printf("Successfully generated: %q", dest.DestLoc)
 	}
+
+	pkg.Logger.Printf("Successfully generated: %q", dest)
 }

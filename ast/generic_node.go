@@ -2,6 +2,7 @@
 package ast
 
 import (
+	"io"
 	"strconv"
 	"strings"
 
@@ -22,7 +23,7 @@ type NodeIterator[N NodeTyper] struct {
 // has reached the end of the branch.
 func (iter *NodeIterator[N]) Consume() (Noder, error) {
 	if iter.current == nil {
-		return nil, simple.Exhausted
+		return nil, io.EOF
 	}
 
 	node := iter.current

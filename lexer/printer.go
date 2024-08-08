@@ -3,9 +3,8 @@ package lexer
 import (
 	"unicode"
 
-	gr "github.com/PlayerR9/grammar/grammar"
-
 	gcby "github.com/PlayerR9/go-commons/bytes"
+	gr "github.com/PlayerR9/grammar/grammar"
 )
 
 // make_arrow is a helper function that creates an arrow pointing to the faulty token.
