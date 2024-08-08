@@ -4,7 +4,6 @@ import (
 	"strings"
 
 	gr "github.com/PlayerR9/grammar/grammar"
-	itrs "github.com/PlayerR9/iterators/simple"
 )
 
 // Rule is a struct that represents a rule of type S.
@@ -33,11 +32,6 @@ func (r *Rule[S]) String() string {
 	values = append(values, ".")
 
 	return strings.Join(values, " ")
-}
-
-// Iterator implements the common.Iterable interface.
-func (r *Rule[S]) Iterator() itrs.Iterater[S] {
-	return itrs.NewSimpleIterator(r.rhss)
 }
 
 // NewRule creates a new rule.

@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"io"
 
-	itrs "github.com/PlayerR9/iterators/simple"
 	lls "github.com/PlayerR9/listlike/stack"
 )
 
@@ -13,6 +12,11 @@ type NodeTyper interface {
 	~int
 
 	fmt.Stringer
+}
+
+type NoderIterater interface {
+	Consume() (Noder, error)
+	Restart()
 }
 
 // Noder is an interface that defines the behavior of a node.
@@ -42,8 +46,8 @@ type Noder interface {
 	// children of the node.
 	//
 	// Returns:
-	//   - itrs.Iterater[Noder]: The iterator.
-	Iterator() itrs.Iterater[Noder]
+	//   - NoderIterater: The iterator.
+	Iterator() NoderIterater
 
 	fmt.Stringer
 }

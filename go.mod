@@ -6,7 +6,7 @@ require github.com/PlayerR9/lib_units v0.1.9
 
 require github.com/PlayerR9/listlike v0.1.4
 
-require github.com/PlayerR9/iterators v0.1.0
+require github.com/PlayerR9/iterators v0.1.0 // indirect
 
 require (
 	github.com/PlayerR9/go-commons v0.1.2

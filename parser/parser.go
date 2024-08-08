@@ -201,26 +201,18 @@ func apply_reduce[S gr.TokenTyper](parser *Parser[S], rule *Rule[S]) error {
 		panic("rule cannot be nil")
 	}
 
-	iter := rule.Iterator()
-	// luc.Assert(iter != nil, "iter must not be nil")
-
 	var prev *S
 
-	for {
-		value, err := iter.Consume()
-		if err != nil {
-			break
-		}
-
+	for _, rhs := range rule.GetRhss() {
 		top, ok := parser.Pop()
 		if !ok {
-			return NewErrUnexpectedToken(prev, nil, value)
+			return NewErrUnexpectedToken(prev, nil, rhs)
 		}
 
 		top_type := top.GetType()
 
-		if top_type != value {
-			return NewErrUnexpectedToken(prev, &top_type, value)
+		if top_type != rhs {
+			return NewErrUnexpectedToken(prev, &top_type, rhs)
 		}
 	}
 
