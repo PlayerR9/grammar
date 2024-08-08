@@ -30,9 +30,6 @@ type Lexer[S gr.TokenTyper] struct {
 
 	// lex_one is the function that lexes the next token of the lexer.
 	lex_one LexOneFunc[S]
-
-	// matcher is the matcher of the lexer.
-	matcher *Matcher[S]
 }
 
 // NewLexer creates a new lexer.
@@ -44,14 +41,13 @@ type Lexer[S gr.TokenTyper] struct {
 //   - *Lexer: The new lexer.
 //
 // It returns nil if the lex_one_func is nil.
-func NewLexer[S gr.TokenTyper](lex_one_func LexOneFunc[S], matcher *Matcher[S]) *Lexer[S] {
+func NewLexer[S gr.TokenTyper](lex_one_func LexOneFunc[S]) *Lexer[S] {
 	if lex_one_func == nil {
 		return nil
 	}
 
 	return &Lexer[S]{
 		lex_one: lex_one_func,
-		matcher: matcher,
 	}
 }
 

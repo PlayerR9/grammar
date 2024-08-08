@@ -13,12 +13,13 @@ import (
 // DecisionFunc is the function that returns the decision of the parser.
 //
 // Parameters:
+//   - parser: The parser.
 //   - lookahead: The lookahead token.
 //
 // Returns:
 //   - Actioner: The action of the decision.
 //   - error: An error if the decision is invalid.
-type DecisionFunc[S gr.TokenTyper] func(lookahead *gr.Token[S]) (Actioner, error)
+type DecisionFunc[S gr.TokenTyper] func(parser *Parser[S], lookahead *gr.Token[S]) (Actioner, error)
 
 // Parser is the parser of the grammar.
 type Parser[S gr.TokenTyper] struct {
@@ -264,7 +265,9 @@ func FullParse[S gr.TokenTyper](parser *Parser[S], tokens []*gr.Token[S]) ([]*gr
 		top, _ := parser.Peek()
 		// luc.AssertOk(ok, "parser.Peek()")
 
-		act, err := parser.decision(top.Lookahead)
+		act, err := parser.decision(parser, top.Lookahead)
+		parser.Refuse()
+
 		if err != nil {
 			forest := get_forest(parser)
 
