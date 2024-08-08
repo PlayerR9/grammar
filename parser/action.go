@@ -3,9 +3,8 @@ package parser
 import (
 	"fmt"
 
-	gr "github.com/PlayerR9/grammar/grammar"
-
 	gcers "github.com/PlayerR9/go-commons/errors"
+	gr "github.com/PlayerR9/grammar/grammar"
 )
 
 // Actioner is an interface that defines the behavior of an action.

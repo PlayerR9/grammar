@@ -6,7 +6,6 @@ import (
 
 	gcers "github.com/PlayerR9/go-commons/errors"
 	gr "github.com/PlayerR9/grammar/grammar"
-	luc "github.com/PlayerR9/lib_units/common"
 )
 
 // Make is the constructor for the AST.
@@ -102,10 +101,7 @@ func (m *Make[N, T]) Apply(tree *gr.TokenTree[T]) ([]N, error) {
 	}
 
 	if prev != nil {
-		panic(luc.NewErrPossibleError(
-			fmt.Errorf("last function returned (%v) instead of nil", prev),
-			errors.New("you may have forgotten to specify a function"),
-		))
+		panic(fmt.Sprintf("Last function returned (%v) instead of nil. Did you forget to specify a function?", prev))
 	}
 
 	nodes := res.Apply()
@@ -146,10 +142,7 @@ func (m *Make[N, T]) ApplyToken(token *gr.Token[T]) ([]N, error) {
 	}
 
 	if prev != nil {
-		panic(luc.NewErrPossibleError(
-			fmt.Errorf("last function returned (%v) instead of nil", prev),
-			errors.New("you may have forgotten to specify a function"),
-		))
+		panic(fmt.Sprintf("Last function returned (%v) instead of nil. Did you forget to specify a function?", prev))
 	}
 
 	nodes := res.Apply()

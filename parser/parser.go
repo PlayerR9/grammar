@@ -2,12 +2,9 @@ package parser
 
 import (
 	"fmt"
-	"slices"
 
 	gcers "github.com/PlayerR9/go-commons/errors"
 	gr "github.com/PlayerR9/grammar/grammar"
-	llq "github.com/PlayerR9/listlike/queue"
-	lls "github.com/PlayerR9/listlike/stack"
 )
 
 // DecisionFunc is the function that returns the decision of the parser.
@@ -24,13 +21,13 @@ type DecisionFunc[S gr.TokenTyper] func(parser *Parser[S], lookahead *gr.Token[S
 // Parser is the parser of the grammar.
 type Parser[S gr.TokenTyper] struct {
 	// tokens is the tokens of the parser.
-	tokens *llq.ArrayQueue[*gr.Token[S]]
+	tokens []*gr.Token[S]
 
 	// stack is the stack of the parser.
-	stack *lls.ArrayStack[*gr.Token[S]]
+	stack []*gr.Token[S]
 
 	// popped is the stack of the parser.
-	popped *lls.ArrayStack[*gr.Token[S]]
+	popped []*gr.Token[S]
 
 	// decision is the function that returns the decision of the parser.
 	decision DecisionFunc[S]
@@ -51,8 +48,6 @@ func NewParser[S gr.TokenTyper](decision_func DecisionFunc[S]) *Parser[S] {
 	}
 
 	return &Parser[S]{
-		stack:    lls.NewArrayStack[*gr.Token[S]](),
-		popped:   lls.NewArrayStack[*gr.Token[S]](),
 		decision: decision_func,
 	}
 }
@@ -62,11 +57,19 @@ func NewParser[S gr.TokenTyper](decision_func DecisionFunc[S]) *Parser[S] {
 // Parameters:
 //   - tokens: The input stream of the parser.
 func (p *Parser[S]) SetInputStream(tokens []*gr.Token[S]) {
-	p.tokens = llq.NewArrayQueue[*gr.Token[S]]()
-	p.tokens.EnqueueMany(tokens)
+	// Clean the previous parser's state.
+	gr.CleanTokens(p.tokens)
+	p.tokens = p.tokens[:0]
 
-	p.stack.Clear()
-	p.popped.Clear()
+	gr.CleanTokens(p.stack)
+	p.stack = p.stack[:0]
+
+	gr.CleanTokens(p.popped)
+	p.popped = p.popped[:0]
+
+	// Set the new input stream.
+
+	p.tokens = tokens
 }
 
 // Pop pops a token from the stack.
@@ -75,12 +78,14 @@ func (p *Parser[S]) SetInputStream(tokens []*gr.Token[S]) {
 //   - *Token[T]: The token if the stack is not empty, nil otherwise.
 //   - bool: True if the stack is not empty, false otherwise.
 func (p *Parser[S]) Pop() (*gr.Token[S], bool) {
-	top, ok := p.stack.Pop()
-	if !ok {
+	if len(p.stack) == 0 {
 		return nil, false
 	}
 
-	p.popped.Push(top)
+	top := p.stack[len(p.stack)-1]
+	p.stack = p.stack[:len(p.stack)-1]
+
+	p.popped = append(p.popped, top)
 
 	return top, true
 }
@@ -91,12 +96,11 @@ func (p *Parser[S]) Pop() (*gr.Token[S], bool) {
 //   - *Token[T]: The token if the stack is not empty, nil otherwise.
 //   - bool: True if the stack is not empty, false otherwise.
 func (p *Parser[S]) Peek() (*gr.Token[S], bool) {
-	top, ok := p.stack.Peek()
-	if !ok {
+	if len(p.stack) == 0 {
 		return nil, false
 	}
 
-	return top, true
+	return p.stack[len(p.stack)-1], true
 }
 
 // Shift shifts a token from the input stream to the stack.
@@ -104,12 +108,14 @@ func (p *Parser[S]) Peek() (*gr.Token[S], bool) {
 // Returns:
 //   - bool: True if the input stream is not empty, false otherwise.
 func (p *Parser[S]) Shift() bool {
-	first, ok := p.tokens.Dequeue()
-	if !ok {
+	if len(p.tokens) == 0 {
 		return false
 	}
 
-	p.stack.Push(first)
+	first := p.tokens[0]
+	p.tokens = p.tokens[1:]
+
+	p.stack = append(p.stack, first)
 
 	return true
 }
@@ -119,8 +125,12 @@ func (p *Parser[S]) Shift() bool {
 // Returns:
 //   - []*Token[S]: The popped tokens.
 func (p *Parser[S]) GetPopped() []*gr.Token[S] {
-	popped := p.popped.Slice()
-	slices.Reverse(popped)
+	popped := make([]*gr.Token[S], 0, len(p.popped))
+
+	for i := 0; i < len(p.popped); i++ {
+		popped = append(popped, p.popped[i])
+	}
+
 	return popped
 }
 
@@ -133,26 +143,24 @@ func (p *Parser[S]) Push(token *gr.Token[S]) {
 		return
 	}
 
-	p.stack.Push(token)
+	p.stack = append(p.stack, token)
 }
 
 // Refuse refuses all the tokens that were popped since the last
 // call to Accept().
 func (p *Parser[S]) Refuse() {
-	for {
-		top, ok := p.popped.Pop()
-		if !ok {
-			break
-		}
+	for len(p.popped) > 0 {
+		top := p.popped[len(p.popped)-1]
+		p.popped = p.popped[:len(p.popped)-1]
 
-		p.stack.Push(top)
+		p.stack = append(p.stack, top)
 	}
 }
 
 // Accept accepts all the tokens that were popped since the last
 // call to Accept().
 func (p *Parser[S]) Accept() {
-	p.popped.Clear()
+	p.popped = p.popped[:0]
 }
 
 // get_forest returns the syntax forest of the parser.

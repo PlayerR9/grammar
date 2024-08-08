@@ -143,3 +143,44 @@ func (tk *Token[S]) AddChildren(children []*Token[S]) {
 		tk.LastChild = child
 	}
 }
+
+// Cleanup cleans up the token.
+//
+// Returns:
+//   - []*Token[S]: The children of the token.
+func (tk *Token[S]) Cleanup() []*Token[S] {
+	var prev, next *Token[S]
+
+	if tk.PrevSibling != nil {
+		prev = tk.PrevSibling
+	}
+
+	if tk.NextSibling != nil {
+		next = tk.NextSibling
+	}
+
+	if prev != nil {
+		prev.NextSibling = next
+	}
+
+	if next != nil {
+		next.PrevSibling = prev
+	}
+
+	var children []*Token[S]
+
+	for c := tk.FirstChild; c != nil; c = c.NextSibling {
+		c.Parent = nil
+
+		children = append(children, c)
+	}
+
+	tk.NextSibling = nil
+	tk.PrevSibling = nil
+	tk.Lookahead = nil
+	tk.Parent = nil
+	tk.FirstChild = nil
+	tk.LastChild = nil
+
+	return children
+}

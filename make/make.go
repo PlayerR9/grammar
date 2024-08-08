@@ -4,7 +4,6 @@ import (
 	"io"
 
 	ast "github.com/PlayerR9/grammar/ast"
-	lls "github.com/PlayerR9/listlike/stack"
 )
 
 // DFSDoFunc is a function that is called for each node.
@@ -66,16 +65,13 @@ func NewSimpleDFS[N ast.Noder, I any](f DFSDoFunc[N, I], init InitFunc[N, I]) *S
 //   - I: The data.
 //   - error: An error if the SimpleDFS could not be applied.
 func (s *SimpleDFS[N, I]) Apply(root N) (I, error) {
-	stack := lls.NewLinkedStack[N]()
-	stack.Push(root)
+	stack := []N{root}
 
 	data := s.init()
 
-	for {
-		top, ok := stack.Pop()
-		if !ok {
-			break
-		}
+	for len(stack) > 0 {
+		top := stack[len(stack)-1]
+		stack = stack[:len(stack)-1]
 
 		err := s.do_func(top, data)
 		if err != nil {
@@ -99,7 +95,7 @@ func (s *SimpleDFS[N, I]) Apply(root N) (I, error) {
 			child := value.(N)
 			// child := luc.AssertConv[N](value, "value")
 
-			stack.Push(child)
+			stack = append(stack, child)
 		}
 	}
 

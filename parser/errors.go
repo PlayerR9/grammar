@@ -1,7 +1,6 @@
 package parser
 
 import (
-	"strconv"
 	"strings"
 
 	gcstr "github.com/PlayerR9/go-commons/strings"
@@ -27,32 +26,18 @@ type ErrUnexpectedToken[T gr.TokenTyper] struct {
 //
 //	"expected either <value 0>, <value 1>, <value 2>, ..., or <value n> after <after> instead, got <actual> instead"
 func (e *ErrUnexpectedToken[T]) Error() string {
-	var expected string
-
-	if len(e.Expecteds) == 0 {
-		expected = "nothing"
-	} else {
-		values := make([]string, 0, len(e.Expecteds))
-
-		for _, expected := range e.Expecteds {
-			values = append(values, expected.String())
-		}
-
-		expected = gcstr.EitherOrString(values, true)
-	}
-
-	var got string
-
-	if e.Got == nil {
-		got = "nothing"
-	} else {
-		got = strconv.Quote((*e.Got).String())
-	}
-
 	var builder strings.Builder
 
 	builder.WriteString("expected ")
-	builder.WriteString(expected)
+
+	if len(e.Expecteds) == 0 {
+		builder.WriteString("nothing")
+	} else {
+		elems := gcstr.SliceOfStringer(e.Expecteds)
+		gcstr.QuoteStrings(elems)
+
+		builder.WriteString(gcstr.EitherOrString(elems))
+	}
 
 	if e.After != nil {
 		builder.WriteString(" after ")
@@ -60,7 +45,13 @@ func (e *ErrUnexpectedToken[T]) Error() string {
 	}
 
 	builder.WriteString(", got ")
-	builder.WriteString(got)
+
+	if e.Got == nil {
+		builder.WriteString("nothing")
+	} else {
+		builder.WriteString((*e.Got).String())
+	}
+
 	builder.WriteString(" instead")
 
 	return builder.String()

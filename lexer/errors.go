@@ -4,7 +4,7 @@ import (
 	"strconv"
 	"strings"
 
-	gcch "github.com/PlayerR9/go-commons/runes"
+	gcstr "github.com/PlayerR9/go-commons/strings"
 )
 
 // ErrUnexpectedRune is an error that occurs when an unexpected rune is
@@ -33,7 +33,10 @@ func (e *ErrUnexpectedRune) Error() string {
 	if len(e.Expecteds) == 0 {
 		builder.WriteString("nothing")
 	} else {
-		builder.WriteString(gcch.EitherOrString(e.Expecteds, true))
+		elems := gcstr.SliceOfRunes(e.Expecteds)
+		gcstr.QuoteStrings(elems)
+
+		builder.WriteString(gcstr.EitherOrString(elems))
 	}
 
 	builder.WriteString(" ")
