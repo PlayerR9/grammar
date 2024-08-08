@@ -81,7 +81,7 @@ func (l *Lexer[S]) FullLex(data []byte) ([]*gr.Token[S], error) {
 
 	var tokens []*gr.Token[S]
 
-	for {
+	for !l.IsExhausted() {
 		tk, err := l.lex_one(l)
 		if err == io.EOF {
 			break
