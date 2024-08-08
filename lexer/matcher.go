@@ -66,17 +66,22 @@ func NewMatcher[S gr.TokenTyper]() *Matcher[S] {
 // find_index finds the index of the rule to match.
 //
 // Parameters:
-//   - symbol: The symbol to match.
+//   - chars: The characters to match.
 //
 // Returns:
-//   - int: The index of the rule to match.
-//   - bool: True if the rule to match is found, false otherwise.
-func (m *Matcher[S]) find_index(symbol S) (int, bool) {
-	cmp_func := func(e *MatchRule[S], symbol S) int {
-		return int(symbol) - int(e.symbol)
+//   - int: The index of the rule to match. -1 if the rule to match is not found.
+func (m *Matcher[S]) find_index(chars []rune) int {
+	for i, rule := range m.rules {
+		if len(rule.chars) != len(chars) {
+			continue
+		}
+
+		if slices.Equal(rule.chars, chars) {
+			return i
+		}
 	}
 
-	return slices.BinarySearchFunc(m.rules, symbol, cmp_func)
+	return -1
 }
 
 // AddToMatch adds a rule to match.
@@ -110,11 +115,11 @@ func (m *Matcher[S]) AddToMatch(symbol S, word string) error {
 		chars:  chars,
 	}
 
-	pos, ok := m.find_index(symbol)
-	if !ok {
-		m.rules = slices.Insert(m.rules, pos, rule)
+	idx := m.find_index(chars)
+	if idx == -1 {
+		m.rules = append(m.rules, rule)
 	} else {
-		m.rules[pos] = rule
+		m.rules[idx] = rule
 	}
 
 	return nil
