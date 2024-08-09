@@ -2,7 +2,7 @@ package main
 
 import (
 	ggen "github.com/PlayerR9/go-generator/generator"
-	pkg "github.com/PlayerR9/grammar/cmd/node/pkg"
+	pkg "github.com/PlayerR9/grammar/cmd/pkg"
 )
 
 func main() {
@@ -23,10 +23,10 @@ func main() {
 		pkg.Logger.Fatalf("Failed to generate: %s", err.Error())
 	}
 
-	dest, err := res.WriteFile("")
+	err = res.WriteFile()
 	if err != nil {
 		pkg.Logger.Fatal(err.Error())
 	}
 
-	pkg.Logger.Printf("Successfully generated: %q", dest)
+	pkg.Logger.Printf("Successfully generated: %q", res.DestLoc)
 }

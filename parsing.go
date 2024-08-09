@@ -34,7 +34,7 @@ const (
 )
 
 // Parser is the parser of the grammar.
-type Parser[T ast.NodeTyper, S grammar.TokenTyper] struct {
+type Parser[T ast.Noder, S grammar.TokenTyper] struct {
 	// l is the lexer.
 	l *lexing.Lexer[S]
 
@@ -42,7 +42,7 @@ type Parser[T ast.NodeTyper, S grammar.TokenTyper] struct {
 	p *parsing.Parser[S]
 
 	// b is the ast builder.
-	b *ast.Make[*ast.Node[T], S]
+	b *ast.Make[T, S]
 
 	// debug is the debug setting.
 	debug DebugSetting
@@ -59,7 +59,7 @@ type Parser[T ast.NodeTyper, S grammar.TokenTyper] struct {
 //   - *Parser: The new parser.
 //
 // This function returns nil iff any of the parameters is nil.
-func NewParser[T ast.NodeTyper, S grammar.TokenTyper](l *lexing.Lexer[S], p *parsing.Parser[S], b *ast.Make[*ast.Node[T], S]) *Parser[T, S] {
+func NewParser[T ast.Noder, S grammar.TokenTyper](l *lexing.Lexer[S], p *parsing.Parser[S], b *ast.Make[T, S]) *Parser[T, S] {
 	if l == nil || p == nil || b == nil {
 		return nil
 	}
@@ -89,9 +89,9 @@ func (p *Parser[T, S]) SetDebug(debug DebugSetting) {
 // Returns:
 //   - *ast.Node[NodeType]: The AST tree.
 //   - error: An error if the parsing failed.
-func (p *Parser[T, S]) Parse(data []byte) (*ast.Node[T], error) {
+func (p *Parser[T, S]) Parse(data []byte) (T, error) {
 	if len(data) == 0 {
-		return nil, errors.New("parameter (\"data\") is invalid: value must not be empty")
+		return *new(T), errors.New("parameter (\"data\") is invalid: value must not be empty")
 	}
 
 	if p.debug&ShowData != 0 {
@@ -115,7 +115,7 @@ func (p *Parser[T, S]) Parse(data []byte) (*ast.Node[T], error) {
 		fmt.Println(string(lexing.PrintSyntaxError(data, tokens)))
 		fmt.Println()
 
-		return nil, fmt.Errorf("error while lexing: %w", err)
+		return *new(T), fmt.Errorf("error while lexing: %w", err)
 	}
 
 	forest, err := parsing.FullParse(p.p, tokens)
@@ -132,9 +132,9 @@ func (p *Parser[T, S]) Parse(data []byte) (*ast.Node[T], error) {
 	}
 
 	if err != nil {
-		return nil, fmt.Errorf("error while parsing: %w", err)
+		return *new(T), fmt.Errorf("error while parsing: %w", err)
 	} else if len(forest) != 1 {
-		return nil, fmt.Errorf("expected 1 tree, got %d trees instead", len(forest))
+		return *new(T), fmt.Errorf("expected 1 tree, got %d trees instead", len(forest))
 	}
 
 	nodes, err := p.b.Apply(forest[0])
@@ -151,9 +151,9 @@ func (p *Parser[T, S]) Parse(data []byte) (*ast.Node[T], error) {
 	}
 
 	if err != nil {
-		return nil, fmt.Errorf("error while converting to AST: %w", err)
+		return *new(T), fmt.Errorf("error while converting to AST: %w", err)
 	} else if len(nodes) != 1 {
-		return nil, fmt.Errorf("expected 1 node, got %d nodes instead", len(nodes))
+		return *new(T), fmt.Errorf("expected 1 node, got %d nodes instead", len(nodes))
 	}
 
 	return nodes[0], nil

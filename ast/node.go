@@ -12,8 +12,18 @@ type NodeTyper interface {
 	fmt.Stringer
 }
 
-type NoderIterater interface {
+// Iterater is an interface that defines the behavior of an iterator.
+type Iterater interface {
+	// Consume is a method that consumes the next node in the iterator.
+	//
+	// Returns:
+	//   - Noder: The next node in the iterator.
+	//   - error: An error of type io.EOF if there are no more nodes in the iterator.
+	//
+	// The returned node is never nil; unless an error is returned.
 	Consume() (Noder, error)
+
+	// Restart is a method that restarts the iterator.
 	Restart()
 }
 
@@ -44,8 +54,8 @@ type Noder interface {
 	// children of the node.
 	//
 	// Returns:
-	//   - NoderIterater: The iterator.
-	Iterator() NoderIterater
+	//   - Iterater: The iterator. Never returns nil.
+	Iterator() Iterater
 
 	fmt.Stringer
 }

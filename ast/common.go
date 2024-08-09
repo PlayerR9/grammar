@@ -27,9 +27,9 @@ func PrintAst[N Noder](root N) string {
 //   - children: The children of the current node.
 //
 // Returns:
-//   - []*Node[N]: The left-recursive AST.
+//   - []N: The left-recursive AST.
 //   - error: An error if the left-recursive AST could not be parsed.
-type LeftAstFunc[N NodeTyper, T gr.TokenTyper] func(children []*gr.Token[T]) ([]*Node[N], error)
+type LeftAstFunc[N Noder, T gr.TokenTyper] func(children []*gr.Token[T]) ([]N, error)
 
 // LeftRecursive parses the left-recursive AST.
 //
@@ -39,12 +39,12 @@ type LeftAstFunc[N NodeTyper, T gr.TokenTyper] func(children []*gr.Token[T]) ([]
 //   - f: The function that parses the left-recursive AST.
 //
 // Returns:
-//   - []*Node[N]: The left-recursive AST.
+//   - []N: The left-recursive AST.
 //   - error: An error if the left-recursive AST could not be parsed.
-func LeftRecursive[N NodeTyper, T gr.TokenTyper](root *gr.Token[T], lhs_type T, f LeftAstFunc[N, T]) ([]*Node[N], error) {
+func LeftRecursive[N Noder, T gr.TokenTyper](root *gr.Token[T], lhs_type T, f LeftAstFunc[N, T]) ([]N, error) {
 	// luc.AssertNil(root, "root")
 
-	var nodes []*Node[N]
+	var nodes []N
 
 	for root != nil {
 		if root.Type != lhs_type {
@@ -88,7 +88,7 @@ func LeftRecursive[N NodeTyper, T gr.TokenTyper](root *gr.Token[T], lhs_type T, 
 // Returns:
 //   - []*Node[N]: The AST.
 //   - error: An error if the AST could not be parsed.
-type ToAstFunc[N NodeTyper, T gr.TokenTyper] func(root *gr.Token[T]) ([]*Node[N], error)
+type ToAstFunc[N Noder, T gr.TokenTyper] func(root *gr.Token[T]) ([]N, error)
 
 // ToAst parses the AST.
 //
@@ -103,7 +103,7 @@ type ToAstFunc[N NodeTyper, T gr.TokenTyper] func(root *gr.Token[T]) ([]*Node[N]
 // Errors:
 //   - *common.ErrInvalidParameter: If the root is nil or the to_ast is nil.
 //   - error: Any error returned by the to_ast function.
-func ToAst[N NodeTyper, T gr.TokenTyper](root *gr.Token[T], to_ast ToAstFunc[N, T]) ([]*Node[N], error) {
+func ToAst[N Noder, T gr.TokenTyper](root *gr.Token[T], to_ast ToAstFunc[N, T]) ([]N, error) {
 	if root == nil {
 		return nil, gcers.NewErrNilParameter("root")
 	} else if to_ast == nil {
