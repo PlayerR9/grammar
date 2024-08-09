@@ -4,7 +4,6 @@ import (
 	"unicode"
 
 	gcby "github.com/PlayerR9/go-commons/bytes"
-	gr "github.com/PlayerR9/grammar/grammar"
 )
 
 // make_arrow is a helper function that creates an arrow pointing to the faulty token.
@@ -45,23 +44,30 @@ func make_arrow(faulty_line []byte, faulty_point int) []byte {
 //
 // Parameters:
 //   - data: The data of the faulty line.
-//   - tokens: The tokens of the faulty line.
+//   - start_pos: The start position of the faulty token.
+//   - delta: The end position of the faulty token. Calculated as start_pos + delta.
 //
 // Returns:
 //   - []byte: The syntax error data.
-func PrintSyntaxError[T gr.TokenTyper](data []byte, tokens []*gr.Token[T]) []byte {
-	if len(tokens) < 2 || len(data) == 0 {
+func PrintSyntaxError(data []byte, start_pos, delta int) []byte {
+	if len(data) == 0 {
 		return nil
 	}
 
-	last_token := tokens[len(tokens)-2]
+	if start_pos < 0 {
+		start_pos = len(data) + start_pos
+	}
 
-	idx := last_token.At
+	end_pos := start_pos + delta
+
+	if end_pos >= len(data) {
+		end_pos = len(data)
+	}
 
 	var before, faulty_line, after []byte
 
-	before_idx := gcby.ReverseSearch(data, idx, []byte("\n"))
-	after_idx := gcby.ForwardSearch(data, idx, []byte("\n"))
+	before_idx := gcby.ReverseSearch(data, start_pos, []byte("\n"))
+	after_idx := gcby.ForwardSearch(data, start_pos, []byte("\n"))
 
 	if before_idx == -1 {
 		if after_idx == -1 {
@@ -81,7 +87,7 @@ func PrintSyntaxError[T gr.TokenTyper](data []byte, tokens []*gr.Token[T]) []byt
 		}
 	}
 
-	fault_point := idx + last_token.Size() - len(before) - 1
+	fault_point := start_pos + end_pos - len(before) - 1
 
 	arrow_data := make_arrow(faulty_line, fault_point)
 

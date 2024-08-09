@@ -111,8 +111,9 @@ func (p *Parser[T, S]) Parse(data []byte) (T, error) {
 	}
 
 	if err != nil {
-		// DEBUG: Print tokens:
-		fmt.Println(string(lexing.PrintSyntaxError(data, tokens)))
+		last_token := tokens[len(tokens)-2]
+
+		fmt.Println(string(lexing.PrintSyntaxError(data, last_token.At, last_token.At+len(last_token.Data))))
 		fmt.Println()
 
 		return *new(T), fmt.Errorf("error while lexing: %w", err)
