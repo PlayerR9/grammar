@@ -36,6 +36,7 @@ type Node[N NodeTyper] struct {
 
 	Type N
 	Data string
+	Pos int
 }
 
 // IsLeaf implements the Noder interface.
@@ -141,7 +142,8 @@ func (tn *Node[N]) Iterator() Iterater {
 func (tn *Node[N]) String() string {
 	var builder strings.Builder
 
-	builder.WriteString("Node[")
+	builder.WriteString(strconv.Itoa(tn.Pos))
+	builder.WriteString(":Node[")
 	builder.WriteString(tn.Type.String())
 
 	if tn.Data != "" {
@@ -160,12 +162,14 @@ func (tn *Node[N]) String() string {
 // Parameters:
 //   - n_type: The type of the node.
 //   - data: The data of the node.
+//   - pos: The position of the node in the source code.
 //
 // Returns:
 //   - *Node[N]: A pointer to the newly created node. It is never nil.
-func NewNode[N NodeTyper](n_type N, data string) *Node[N] {
+func NewNode[N NodeTyper](n_type N, data string, pos int) *Node[N] {
 	return &Node[N]{
 		Type: n_type,
 		Data: data,
+		Pos:  pos,
 	}
 }
