@@ -1,4 +1,4 @@
-package lexer
+package lexing
 
 import (
 	"fmt"
@@ -74,15 +74,15 @@ func (l *Lexer[S]) Reset() {
 //
 // This function is just a convenience function that calls the SetInputStream, Lex, and
 // GetTokens methods of the lexer.
-func (l *Lexer[S]) FullLex(data []byte) ([]*gr.Token[S], error) {
-	l.Init(data)
+func FullLex[S gr.TokenTyper](lexer *Lexer[S], data []byte) ([]*gr.Token[S], error) {
+	lexer.Init(data)
 
-	l.Reset()
+	lexer.Reset()
 
 	var tokens []*gr.Token[S]
 
-	for !l.IsExhausted() {
-		tk, err := l.lex_one(l)
+	for !lexer.IsExhausted() {
+		tk, err := lexer.lex_one(lexer)
 		if err == io.EOF {
 			break
 		}
