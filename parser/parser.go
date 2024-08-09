@@ -2,6 +2,7 @@ package parser
 
 import (
 	"fmt"
+	"slices"
 
 	gcers "github.com/PlayerR9/go-commons/errors"
 	gr "github.com/PlayerR9/grammar/grammar"
@@ -130,6 +131,8 @@ func (p *Parser[S]) GetPopped() []*gr.Token[S] {
 	for i := 0; i < len(p.popped); i++ {
 		popped = append(popped, p.popped[i])
 	}
+
+	slices.Reverse(popped)
 
 	return popped
 }

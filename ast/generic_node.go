@@ -142,7 +142,8 @@ func (tn *Node[N]) AddChildren(children []Noder) {
 // values is guaranteed to be a non-nil node of type Node[N].
 func (tn *Node[N]) Iterator() NoderIterater {
 	return &NodeIterator[N]{
-		first: tn.FirstChild,
+		first:   tn.FirstChild,
+		current: tn.FirstChild,
 	}
 }
 
