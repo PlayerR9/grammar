@@ -1,11 +1,39 @@
 package lexing
 
 import (
+	"fmt"
 	"strconv"
 	"strings"
 
 	gcstr "github.com/PlayerR9/go-commons/strings"
 )
+
+type ErrLexing struct {
+	StartPos   int
+	Delta      int
+	Reason     error
+	Suggestion string
+}
+
+func (e *ErrLexing) Error() string {
+	if e.Reason == nil {
+		return "an error occurred while lexing"
+	}
+
+	return fmt.Sprintf("error while lexing: %s", e.Reason.Error())
+}
+
+func NewErrLexing(startPos int, delta int, reason error) *ErrLexing {
+	return &ErrLexing{
+		StartPos: startPos,
+		Delta:    delta,
+		Reason:   reason,
+	}
+}
+
+func (e *ErrLexing) SetSuggestion(suggestions ...string) {
+	e.Suggestion = strings.Join(suggestions, " ")
+}
 
 // ErrUnexpectedRune is an error that occurs when an unexpected rune is
 // encountered.

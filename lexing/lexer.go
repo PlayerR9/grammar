@@ -1,7 +1,6 @@
 package lexing
 
 import (
-	"fmt"
 	"io"
 
 	gcch "github.com/PlayerR9/go-commons/runes"
@@ -30,6 +29,9 @@ type Lexer[S gr.TokenTyper] struct {
 
 	// lex_one is the function that lexes the next token of the lexer.
 	lex_one LexOneFunc[S]
+
+	// err_reason is the error reason of the lexer.
+	err_reason error
 }
 
 // NewLexer creates a new lexer.
@@ -56,7 +58,71 @@ func NewLexer[S gr.TokenTyper](lex_one_func LexOneFunc[S]) *Lexer[S] {
 // This utility function allows to reset the information contained in the lexer
 // so that it can be used multiple times.
 func (l *Lexer[S]) Reset() {
+	gr.CleanTokens(l.tokens)
 	l.tokens = l.tokens[:0]
+
+	l.err_reason = nil
+}
+
+// Error returns the error reason of the lexer.
+//
+// Returns:
+//   - *ErrLexing: The error reason of the lexer.
+//
+// This function returns nil iff the lexer has no error.
+func (l *Lexer[S]) Error() *ErrLexing {
+	if l.err_reason == nil || l.err_reason == io.EOF {
+		return nil
+	}
+
+	var pos, delta int
+
+	if len(l.tokens) < 2 {
+		pos = 0
+		delta = 1
+	} else {
+		last_tk := l.tokens[len(l.tokens)-2]
+
+		pos = last_tk.At
+
+		if last_tk.Data == "" {
+			delta = 1
+		} else {
+			delta = len(last_tk.Data)
+		}
+	}
+
+	return NewErrLexing(pos, delta, l.err_reason)
+}
+
+// get_tokens returns the tokens of the lexer.
+//
+// Parameters:
+//   - tokens: The tokens of the lexer.
+//
+// Returns:
+//   - []T: The tokens of the lexer.
+func get_tokens[S gr.TokenTyper](tokens []*gr.Token[S]) []*gr.Token[S] {
+	eof_tk := &gr.Token[S]{
+		Type:      S(0),
+		Data:      "",
+		At:        -1,
+		Lookahead: nil,
+	}
+
+	tokens = append(tokens, eof_tk)
+	if len(tokens) == 1 {
+		return tokens
+	}
+
+	prev := tokens[0]
+
+	for _, next := range tokens[1:] {
+		prev.Lookahead = next
+		prev = next
+	}
+
+	return tokens
 }
 
 // FullLex lexes the input stream of the lexer and returns the tokens.
@@ -71,34 +137,24 @@ func (l *Lexer[S]) Reset() {
 //
 // This function always returns at least one token and the last one is
 // always the EOF token.
-//
-// This function is just a convenience function that calls the SetInputStream, Lex, and
-// GetTokens methods of the lexer.
-func FullLex[S gr.TokenTyper](lexer *Lexer[S], data []byte) ([]*gr.Token[S], error) {
+func FullLex[S gr.TokenTyper](lexer *Lexer[S], data []byte) []*gr.Token[S] {
 	lexer.Init(data)
 
 	lexer.Reset()
 
 	var tokens []*gr.Token[S]
 
-	for !lexer.IsExhausted() {
+	for !lexer.IsExhausted() && lexer.err_reason == nil {
 		tk, err := lexer.lex_one(lexer)
-		if err == io.EOF {
-			break
-		}
-
 		if err != nil {
-			tokens = get_tokens(tokens)
-			return tokens, fmt.Errorf("error while lexing: %w", err)
-		}
-
-		if tk != nil {
+			lexer.err_reason = err
+		} else if tk != nil {
 			tokens = append(tokens, tk)
 		}
 	}
 
 	tokens = get_tokens(tokens)
-	return tokens, nil
+	return tokens
 }
 
 /* // MatchChars matches the next characters of the lexer.
@@ -173,33 +229,3 @@ func (l *Lexer[S]) MatchRegex(regex *regexp.Regexp) (string, bool) {
 
 	return string(match), true
 } */
-
-// get_tokens returns the tokens of the lexer.
-//
-// Parameters:
-//   - tokens: The tokens of the lexer.
-//
-// Returns:
-//   - []T: The tokens of the lexer.
-func get_tokens[S gr.TokenTyper](tokens []*gr.Token[S]) []*gr.Token[S] {
-	eof_tk := &gr.Token[S]{
-		Type:      S(0),
-		Data:      "",
-		At:        -1,
-		Lookahead: nil,
-	}
-
-	tokens = append(tokens, eof_tk)
-	if len(tokens) == 1 {
-		return tokens
-	}
-
-	prev := tokens[0]
-
-	for _, next := range tokens[1:] {
-		prev.Lookahead = next
-		prev = next
-	}
-
-	return tokens
-}

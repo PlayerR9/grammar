@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	gcers "github.com/PlayerR9/go-commons/errors"
+	gcslc "github.com/PlayerR9/go-commons/slices"
 	gr "github.com/PlayerR9/grammar/grammar"
 )
 
@@ -33,21 +34,11 @@ func NewMake[N Noder, T gr.TokenTyper]() *Make[N, T] {
 // Returns:
 //   - error: An error if no steps were provided or if the entry already exists.
 func (m *Make[N, T]) AddEntry(t T, steps []DoFunc[N]) error {
-	if len(steps) == 0 {
-		return errors.New("no steps provided")
+	f := func(do DoFunc[N]) bool {
+		return do != nil
 	}
 
-	var top int
-
-	for i := 0; i < len(steps); i++ {
-		if steps[i] != nil {
-			steps[top] = steps[i]
-			top++
-		}
-	}
-
-	steps = steps[:top]
-
+	steps = gcslc.SliceFilter(steps, f)
 	if len(steps) == 0 {
 		return errors.New("no steps provided")
 	}
@@ -148,4 +139,24 @@ func (m *Make[N, T]) ApplyToken(token *gr.Token[T]) ([]N, error) {
 	nodes := res.Apply()
 
 	return nodes, nil
+}
+
+// CheckTokenType checks if the token is of the expected type.
+//
+// Parameters:
+//   - tk: The token to check.
+//   - tk_type: The expected type of the token.
+//
+// Returns:
+//   - error: An error if the token is not of the expected type.
+func CheckTokenType[T gr.TokenTyper](tk *gr.Token[T], tk_type T) error {
+	if tk == nil {
+		return fmt.Errorf("expected %q, got nil instead", tk_type.String())
+	}
+
+	if tk.Type != tk_type {
+		return fmt.Errorf("expected %q, got %q instead", tk_type.String(), tk.Type.String())
+	}
+
+	return nil
 }

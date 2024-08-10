@@ -4,6 +4,8 @@ import (
 	"strconv"
 	"strings"
 	"unicode/utf8"
+
+	gcslc "github.com/PlayerR9/go-commons/slices"
 )
 
 // Token is a node in a tree.
@@ -94,18 +96,7 @@ func (tk *Token[S]) AddChildren(children []*Token[S]) {
 		return
 	}
 
-	var top int
-
-	for i := 0; i < len(children); i++ {
-		child := children[i]
-
-		if child != nil {
-			children[top] = child
-			top++
-		}
-	}
-
-	children = children[:top]
+	children = gcslc.FilterNilValues(children)
 	if len(children) == 0 {
 		return
 	}

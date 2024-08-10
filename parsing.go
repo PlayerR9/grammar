@@ -46,6 +46,9 @@ type Parser[T ast.Noder, S grammar.TokenTyper] struct {
 
 	// debug is the debug setting.
 	debug DebugSetting
+
+	// data is the data of the parser.
+	data []byte
 }
 
 // NewParser creates a new parser.
@@ -94,13 +97,15 @@ func (p *Parser[T, S]) Parse(data []byte) (T, error) {
 		return *new(T), errors.New("parameter (\"data\") is invalid: value must not be empty")
 	}
 
+	p.data = data
+
 	if p.debug&ShowData != 0 {
 		fmt.Println("Debug option show_data is enabled, printing data:")
-		fmt.Println(string(data))
+		fmt.Println(string(p.data))
 		fmt.Println()
 	}
 
-	tokens, err := lexing.FullLex(p.l, data)
+	tokens := lexing.FullLex(p.l, p.data)
 
 	if p.debug&ShowLex != 0 {
 		fmt.Println("Debug option show_lex is enabled, printing tokens:")
@@ -110,13 +115,8 @@ func (p *Parser[T, S]) Parse(data []byte) (T, error) {
 		fmt.Println()
 	}
 
-	if err != nil {
-		last_token := tokens[len(tokens)-2]
-
-		fmt.Println(string(lexing.PrintSyntaxError(data, last_token.At, last_token.At+len(last_token.Data))))
-		fmt.Println()
-
-		return *new(T), fmt.Errorf("error while lexing: %w", err)
+	if err := p.l.Error(); err != nil {
+		return *new(T), err
 	}
 
 	forest, err := parsing.FullParse(p.p, tokens)

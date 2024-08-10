@@ -11,6 +11,8 @@ import (
 	gcers "github.com/PlayerR9/go-commons/errors"
 	gcch "github.com/PlayerR9/go-commons/runes"
 	gr "github.com/PlayerR9/grammar/grammar"
+
+	gcslc "github.com/PlayerR9/go-commons/slices"
 )
 
 // MatchRule is a rule to match.
@@ -148,33 +150,31 @@ func (m *Matcher[S]) filter(scanner io.RuneScanner) (bool, error) {
 
 	m.got = &char
 
-	var top int
-
-	for i := 0; i < len(m.indices); i++ {
-		rule := m.rules[m.indices[i]]
+	f := func(idx int) bool {
+		rule := m.rules[idx]
 
 		c, ok := rule.CharAt(m.at)
-		if !ok {
-			continue
-		}
-
-		if c == char {
-			m.indices[top] = m.indices[i]
-			top++
-		}
+		return ok && c == char
 	}
 
-	if top == 0 {
+	tmp, ok := gcslc.SFSeparateEarly(m.indices, f)
+	if !ok {
 		// No valid matches exist.
 		_ = scanner.UnreadRune()
 
-		return true, nil
-	}
+		tmp, ok := m.filter_size(m.indices)
+		if !ok {
+			return true, nil
+		}
 
-	m.indices = m.indices[:top]
-	m.prev = &char
-	m.at++
-	m.chars = append(m.chars, char)
+		m.indices = tmp
+	} else {
+		m.indices = tmp
+
+		m.prev = &char
+		m.at++
+		m.chars = append(m.chars, char)
+	}
 
 	return false, nil
 }
@@ -295,19 +295,31 @@ func (m *Matcher[S]) Match(scanner io.RuneScanner) (Matched[S], error) {
 		}, fmt.Errorf("ambiguous match: %s", strings.Join(words, ", "))
 	}
 
-	rule := m.rules[m.indices[0]]
-
-	if len(rule.chars) != m.at {
+	tmp, ok := m.filter_size(m.indices)
+	if !ok {
 		return Matched[S]{
 			symbol: nil,
 			chars:  m.chars,
 		}, m.make_error()
 	}
 
+	m.indices = tmp
+
+	rule := m.rules[m.indices[0]]
+
 	return Matched[S]{
 		symbol: &rule.symbol,
 		chars:  m.chars,
 	}, nil
+}
+
+func (m *Matcher[S]) filter_size(indices []int) ([]int, bool) {
+	f := func(idx int) bool {
+		rule := m.rules[idx]
+		return len(rule.chars) == m.at
+	}
+
+	return gcslc.SFSeparateEarly(indices, f)
 }
 
 type Matched[S gr.TokenTyper] struct {

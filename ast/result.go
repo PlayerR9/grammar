@@ -5,6 +5,7 @@ import (
 
 	gcers "github.com/PlayerR9/go-commons/errors"
 	gcint "github.com/PlayerR9/go-commons/ints"
+	gcslc "github.com/PlayerR9/go-commons/slices"
 )
 
 // Result is the result of the AST.
@@ -57,17 +58,7 @@ func (a *Result[N]) AppendNodes(nodes []N) {
 // Returns:
 //   - error: An error if the result is an error.
 func (a *Result[N]) AppendChildren(children []Noder) error {
-	var top int
-
-	for i := 0; i < len(children); i++ {
-		if children[i] != nil {
-			children[top] = children[i]
-			top++
-		}
-	}
-
-	children = children[:top]
-
+	children = gcslc.SliceFilter(children, filter_non_nil_noders)
 	if len(children) == 0 {
 		return nil
 	}
