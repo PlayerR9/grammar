@@ -6,6 +6,7 @@ import (
 	"unicode"
 	"unicode/utf8"
 
+	gfch "github.com/PlayerR9/go-commons/Formatting/runes"
 	gcby "github.com/PlayerR9/go-commons/bytes"
 	gcint "github.com/PlayerR9/go-commons/ints"
 	"github.com/PlayerR9/grammar/lexing"
@@ -73,9 +74,9 @@ type PrintSettings struct {
 // Returns:
 //   - []byte: The arrow data.
 func (s *PrintSettings) make_arrow(faulty_line []byte, start_pos int) []byte {
-	// luc.AssertParam("faulty_point", faulty_point >= 0 && faulty_point < len(faulty_line), luc.NewErrOutOfBounds(faulty_point, 0, len(faulty_line)))
+	var buffer bytes.Buffer
 
-	arrow_data := make([]byte, 0, start_pos)
+	buffer.Grow(len(faulty_line))
 
 	var first_tab []byte
 
@@ -87,9 +88,9 @@ func (s *PrintSettings) make_arrow(faulty_line []byte, start_pos int) []byte {
 
 	for i := 0; i < start_pos; i++ {
 		if faulty_line[i] == '\t' {
-			arrow_data = append(arrow_data, first_tab...)
+			buffer.Write(first_tab)
 		} else {
-			arrow_data = append(arrow_data, ' ')
+			buffer.WriteByte(' ')
 		}
 	}
 
@@ -108,7 +109,7 @@ func (s *PrintSettings) make_arrow(faulty_line []byte, start_pos int) []byte {
 				break
 			}
 
-			arrow_data = append(arrow_data, '^')
+			buffer.WriteRune('^')
 		}
 	} else {
 		var second_tab []byte
@@ -121,14 +122,14 @@ func (s *PrintSettings) make_arrow(faulty_line []byte, start_pos int) []byte {
 
 		for i := start_pos; i < start_pos+s.delta; i++ {
 			if faulty_line[i] != '\t' {
-				arrow_data = append(arrow_data, '^')
+				buffer.WriteByte('^')
 			} else {
-				arrow_data = append(arrow_data, second_tab...)
+				buffer.Write(second_tab)
 			}
 		}
 	}
 
-	return arrow_data
+	return buffer.Bytes()
 }
 
 // PrintSyntaxError is a helper function that prints the syntax error.
@@ -168,8 +169,8 @@ func PrintSyntaxError(data []byte, start_pos int, opts ...PrintOption) []byte {
 
 	var before, faulty_line, after []byte
 
-	before_idx := gcby.ReverseSearch(data, start_pos, Newline)
-	after_idx := gcby.ForwardSearch(data, start_pos, Newline)
+	before_idx := gcby.ReverseSearch(data, start_pos, gcby.Newline)
+	after_idx := gcby.ForwardSearch(data, start_pos, gcby.Newline)
 
 	if before_idx == -1 {
 		if after_idx == -1 {
@@ -191,25 +192,30 @@ func PrintSyntaxError(data []byte, start_pos int, opts ...PrintOption) []byte {
 
 	arrow_data := s.make_arrow(faulty_line, start_pos-len(before))
 
-	full_data := make([]byte, 0, len(data)+1+len(arrow_data))
+	before = gcby.LimitReverseLines(before, s.prev_lines)
+	after = gcby.LimitLines(after, s.next_lines)
+
+	var buffer bytes.Buffer
+
+	buffer.Grow(len(data) + 1 + len(arrow_data))
 
 	if len(before) > 0 {
-		before = LimitReverseLines(before, s.prev_lines)
-		full_data = append(full_data, before...)
-		full_data = append(full_data, '\n')
+		buffer.Write(before)
+		buffer.WriteByte('\n')
 	}
 
-	full_data = append(full_data, faulty_line...)
-	full_data = append(full_data, '\n')
-	full_data = append(full_data, arrow_data...)
+	buffer.Write(faulty_line)
+	buffer.WriteByte('\n')
+	buffer.Write(arrow_data)
 
-	if len(after) > 0 {
-		full_data = append(full_data, '\n')
-		after = LimitLines(after, s.next_lines)
-		full_data = append(full_data, after...)
+	if len(after) == 0 {
+		return buffer.Bytes()
 	}
 
-	return full_data
+	buffer.WriteByte('\n')
+	buffer.Write(after)
+
+	return buffer.Bytes()
 }
 
 // DetermineCoords is a helper function that determines the coordinates of the given position.
@@ -254,9 +260,9 @@ func DisplayError(data []byte, err error, opts ...PrintOption) string {
 
 	var builder strings.Builder
 
-	switch err := err.(type) {
+	switch reason := err.(type) {
 	case *lexing.ErrLexing:
-		x, y := DetermineCoords(data, err.StartPos)
+		x, y := DetermineCoords(data, reason.StartPos)
 
 		builder.WriteString("Lexing error at the ")
 		builder.WriteString(gcint.GetOrdinalSuffix(x))
@@ -265,21 +271,29 @@ func DisplayError(data []byte, err error, opts ...PrintOption) string {
 		builder.WriteString(" line:")
 		builder.WriteRune('\n')
 		builder.WriteRune('\t')
-		builder.WriteString(err.Error())
+		builder.WriteString(reason.Error())
 		builder.WriteRune('\n')
 		builder.WriteRune('\n')
 
-		opts = append(opts, WithDelta(err.Delta))
+		opts = append(opts, WithDelta(reason.Delta))
 
-		builder.Write(PrintSyntaxError(data, err.StartPos, opts...))
-		builder.WriteRune('\n')
+		bs := gfch.NewBoxStyle(gfch.BtNormal, true, [4]int{1, 0, 1, 0})
 
-		suggestion := err.Suggestion
+		table, err := bs.ApplyStrings(strings.Split(string(PrintSyntaxError(data, reason.StartPos, opts...)), "\n"))
+		if err != nil {
+			panic(err.Error())
+		}
+
+		builder.WriteString(table.String())
+		// builder.WriteRune('\n')
+
+		suggestion := reason.Suggestion
 		if suggestion != "" {
 			builder.WriteRune('\n')
 			builder.WriteString("Hint: ")
 			builder.WriteString(suggestion)
 		}
+
 	default:
 		builder.WriteString("Error: ")
 		builder.WriteString(err.Error())
