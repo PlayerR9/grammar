@@ -30,26 +30,43 @@ type Lexer[S gr.TokenTyper] struct {
 	// lex_one is the function that lexes the next token of the lexer.
 	lex_one LexOneFunc[S]
 
-	// err_reason is the error reason of the lexer.
-	err_reason error
+	// Err is the error reason of the lexer.
+	Err *ErrLexing
+
+	// matcher is the matcher of the lexer.
+	matcher *Matcher[S]
+
+	// table is the lavenshtein table of the lexer.
+	table *LavenshteinTable
 }
 
 // NewLexer creates a new lexer.
 //
 // Parameters:
 //   - lex_one_func: The function that lexes the next token of the lexer.
+//   - matcher: The matcher of the lexer. If matcher is nil, it won't be used.
 //
 // Returns:
 //   - *Lexer: The new lexer.
 //
 // It returns nil if the lex_one_func is nil.
-func NewLexer[S gr.TokenTyper](lex_one_func LexOneFunc[S]) *Lexer[S] {
+func NewLexer[S gr.TokenTyper](lex_one_func LexOneFunc[S], matcher *Matcher[S]) *Lexer[S] {
 	if lex_one_func == nil {
 		return nil
 	}
 
-	return &Lexer[S]{
-		lex_one: lex_one_func,
+	if matcher == nil {
+		return &Lexer[S]{
+			lex_one: lex_one_func,
+		}
+	} else {
+		table, _ := NewLevenshteinTable(matcher.GetWords()...)
+
+		return &Lexer[S]{
+			lex_one: lex_one_func,
+			matcher: matcher,
+			table:   table,
+		}
 	}
 }
 
@@ -61,17 +78,20 @@ func (l *Lexer[S]) Reset() {
 	gr.CleanTokens(l.tokens)
 	l.tokens = l.tokens[:0]
 
-	l.err_reason = nil
+	l.Err = nil
 }
 
-// Error returns the error reason of the lexer.
+// make_error returns the error reason of the lexer.
+//
+// Parameters:
+//   - reason: The error reason of the lexer.
 //
 // Returns:
 //   - *ErrLexing: The error reason of the lexer.
 //
 // This function returns nil iff the lexer has no error.
-func (l *Lexer[S]) Error() *ErrLexing {
-	if l.err_reason == nil || l.err_reason == io.EOF {
+func (l *Lexer[S]) make_error(reason error) *ErrLexing {
+	if reason == nil || reason == io.EOF {
 		return nil
 	}
 
@@ -92,7 +112,7 @@ func (l *Lexer[S]) Error() *ErrLexing {
 		}
 	}
 
-	return NewErrLexing(pos, delta, l.err_reason)
+	return NewErrLexing(pos, delta, reason)
 }
 
 // get_tokens returns the tokens of the lexer.
@@ -137,95 +157,50 @@ func get_tokens[S gr.TokenTyper](tokens []*gr.Token[S]) []*gr.Token[S] {
 //
 // This function always returns at least one token and the last one is
 // always the EOF token.
-func FullLex[S gr.TokenTyper](lexer *Lexer[S], data []byte) []*gr.Token[S] {
+func (lexer *Lexer[S]) FullLex(data []byte) []*gr.Token[S] {
 	lexer.Init(data)
 
 	lexer.Reset()
 
 	var tokens []*gr.Token[S]
 
-	for !lexer.IsExhausted() && lexer.err_reason == nil {
-		tk, err := lexer.lex_one(lexer)
-		if err != nil {
-			lexer.err_reason = err
-		} else if tk != nil {
-			tokens = append(tokens, tk)
+	if lexer.matcher == nil {
+		for !lexer.IsExhausted() && lexer.Err == nil {
+			tmp, err := lexer.lex_one(lexer)
+			if err != nil {
+				lexer.Err = lexer.make_error(err)
+			} else if tmp != nil {
+				tokens = append(tokens, tmp)
+			}
 		}
+	} else {
+		for !lexer.IsExhausted() && lexer.Err == nil {
+			at := lexer.Pos()
+
+			match, _ := lexer.matcher.Match(lexer)
+
+			if match.IsValidMatch() {
+				symbol, data := match.GetMatch()
+
+				tk := gr.NewToken(symbol, data, at, nil)
+				tokens = append(tokens, tk)
+			} else {
+				tmp, err := lexer.lex_one(lexer)
+				if err != nil {
+					lexer.Err = lexer.make_error(err)
+
+					str, err := lexer.table.Closest(match.chars, 2) // Magic number.
+					if err == nil {
+						lexer.Err.SetSuggestion("Did you mean '" + str + "'?")
+					}
+				} else if tmp != nil {
+					tokens = append(tokens, tmp)
+				}
+			}
+		}
+
 	}
 
 	tokens = get_tokens(tokens)
 	return tokens
 }
-
-/* // MatchChars matches the next characters of the lexer.
-//
-// Parameters:
-//   - lexer: The lexer.
-//   - chars: The characters to match.
-//
-// Returns:
-//   - string: The matched characters.
-//   - error: An error if the next characters do not match.
-func (l *Lexer[S]) Match() (string, error) {
-	if l.matcher == nil {
-		return "", nil
-	}
-
-	match, err := l.matcher.Match(l)
-	if err != nil {
-		return "", err
-	}
-
-
-	if len(chars) == 0 {
-		return "", nil
-	}
-
-	var prev *rune
-	var builder strings.Builder
-
-	for _, char := range chars {
-		c, err := l.Next()
-		if IsExhausted(err) {
-			return builder.String(), NewErrUnexpectedRune(prev, nil, char)
-		} else if err != nil {
-			return builder.String(), err
-		}
-
-		if c != char {
-			return builder.String(), NewErrUnexpectedRune(prev, &c, char)
-		}
-
-		builder.WriteRune(c)
-		prev = &c
-	}
-
-	return builder.String(), nil
-} */
-
-/* // MatchRegex matches the next regex of the lexer.
-//
-// Parameters:
-//   - regex: The regex to match.
-//
-// Returns:
-//   - string: The matched regex.
-//   - bool: True if the next regex matches, false otherwise.
-func (l *Lexer[S]) MatchRegex(regex *regexp.Regexp) (string, bool) {
-	if regex == nil {
-		return "", false
-	}
-
-	l.input_stream.
-
-	match := regex.Find(l.input_stream)
-
-	if len(match) == 0 {
-		return "", false
-	}
-
-	l.input_stream = l.input_stream[len(match):]
-	l.at += len(match)
-
-	return string(match), true
-} */

@@ -1,10 +1,9 @@
 package parsing
 
 import (
-	"fmt"
+	"errors"
 	"slices"
 
-	gcers "github.com/PlayerR9/go-commons/errors"
 	gr "github.com/PlayerR9/grammar/grammar"
 )
 
@@ -32,6 +31,9 @@ type Parser[S gr.TokenTyper] struct {
 
 	// decision is the function that returns the decision of the parser.
 	decision DecisionFunc[S]
+
+	// Err is the error reason of the parser.
+	Err *ErrParsing
 }
 
 // NewParser creates a new parser.
@@ -67,6 +69,8 @@ func (p *Parser[S]) SetInputStream(tokens []*gr.Token[S]) {
 
 	gr.CleanTokens(p.popped)
 	p.popped = p.popped[:0]
+
+	p.Err = nil
 
 	// Set the new input stream.
 
@@ -247,66 +251,56 @@ func apply_reduce[S gr.TokenTyper](parser *Parser[S], rule *Rule[S]) error {
 //
 // Returns:
 //   - []*gr.TokenTree[S]: The syntax forest of the input stream.
-//   - error: An error if the parser encounters an error while parsing the input stream.
-func FullParse[S gr.TokenTyper](parser *Parser[S], tokens []*gr.Token[S]) ([]*gr.TokenTree[S], error) {
-	if parser == nil {
-		forest := get_forest(parser)
+func (p *Parser[S]) FullParse(tokens []*gr.Token[S]) []*gr.TokenTree[S] {
+	p.SetInputStream(tokens)
 
-		return forest, gcers.NewErrNilParameter("parser")
-	}
-
-	parser.SetInputStream(tokens)
-
-	ok := parser.Shift() // initial shift
+	ok := p.Shift() // initial shift
 	if !ok {
-		forest := get_forest(parser)
+		forest := get_forest(p)
 
-		return forest, fmt.Errorf("no tokens in input stream")
+		p.Err = NewErrParsing(0, -1, errors.New("no tokens were specified"))
+
+		return forest
 	}
 
-	for {
-		top, _ := parser.Peek()
+	for p.Err == nil {
+		top, _ := p.Peek()
 		// luc.AssertOk(ok, "parser.Peek()")
 
-		act, err := parser.decision(parser, top.Lookahead)
-		parser.Refuse()
-
+		act, err := p.decision(p, top.Lookahead)
 		if err != nil {
-			forest := get_forest(parser)
-
-			return forest, fmt.Errorf("error getting decision: %w", err)
+			p.Err = NewErrParsing(top.At, -1, err)
+			p.Refuse()
+			break
 		}
+
+		p.Refuse()
 
 		switch act := act.(type) {
 		case *ShiftAction:
-			_ = parser.Shift()
+			_ = p.Shift()
 			// luc.AssertOk(ok, "parser.Shift()")
 		case *ReduceAction[S]:
-			err := apply_reduce(parser, act.rule)
+			err := apply_reduce(p, act.rule)
 			if err != nil {
-				parser.Refuse()
-
-				forest := get_forest(parser)
-
-				return forest, fmt.Errorf("error applying reduce: %w", err)
+				p.Err = NewErrParsing(top.At, -1, err)
 			}
 		case *AcceptAction[S]:
-			err := apply_reduce(parser, act.rule)
-			if err != nil {
-				parser.Refuse()
+			err := apply_reduce(p, act.rule)
+			if err == nil {
+				forest := get_forest(p)
 
-				forest := get_forest(parser)
-
-				return forest, fmt.Errorf("error applying accept: %w", err)
+				return forest
 			}
 
-			forest := get_forest(parser)
-
-			return forest, nil
+			p.Err = NewErrParsing(top.At, -1, err)
 		default:
-			forest := get_forest(parser)
-
-			return forest, fmt.Errorf("unexpected action: %v", act)
+			p.Err = NewErrParsing(top.At, -1, errors.New("invalid action type"))
 		}
 	}
+
+	p.Refuse()
+	forest := get_forest(p)
+
+	return forest
 }

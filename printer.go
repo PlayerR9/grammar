@@ -1,4 +1,4 @@
-package errors
+package grammar
 
 import (
 	"bytes"
@@ -10,7 +10,16 @@ import (
 	gcby "github.com/PlayerR9/go-commons/bytes"
 	gcint "github.com/PlayerR9/go-commons/ints"
 	"github.com/PlayerR9/grammar/lexing"
+	"github.com/PlayerR9/grammar/parsing"
 )
+
+var (
+	BoxStyle *gfch.BoxStyle
+)
+
+func init() {
+	BoxStyle = gfch.NewBoxStyle(gfch.BtNormal, true, [4]int{1, 2, 1, 2})
+}
 
 type PrintOption func(s *PrintSettings)
 
@@ -253,6 +262,15 @@ func DetermineCoords(data []byte, pos int) (int, int) {
 	return x, y
 }
 
+// DisplayError is a helper function that displays the error.
+//
+// Parameters:
+//   - data: The data read from the input stream.
+//   - err: The error.
+//   - opts: The print options.
+//
+// Returns:
+//   - string: The error data.
 func DisplayError(data []byte, err error, opts ...PrintOption) string {
 	if err == nil {
 		return ""
@@ -271,21 +289,26 @@ func DisplayError(data []byte, err error, opts ...PrintOption) string {
 		builder.WriteString(" line:")
 		builder.WriteRune('\n')
 		builder.WriteRune('\t')
-		builder.WriteString(reason.Error())
+		builder.WriteString(reason.Reason.Error())
 		builder.WriteRune('\n')
 		builder.WriteRune('\n')
 
 		opts = append(opts, WithDelta(reason.Delta))
 
-		bs := gfch.NewBoxStyle(gfch.BtNormal, true, [4]int{1, 0, 1, 0})
+		var table gfch.RuneTable
 
-		table, err := bs.ApplyStrings(strings.Split(string(PrintSyntaxError(data, reason.StartPos, opts...)), "\n"))
+		err := table.FromBytes(bytes.Split(PrintSyntaxError(data, reason.StartPos, opts...), []byte("\n")))
 		if err != nil {
 			panic(err.Error())
 		}
 
-		builder.WriteString(table.String())
-		// builder.WriteRune('\n')
+		err = BoxStyle.Apply(&table)
+		if err != nil {
+			panic(err.Error())
+		}
+
+		_, _ = builder.Write(table.Byte())
+		builder.WriteRune('\n')
 
 		suggestion := reason.Suggestion
 		if suggestion != "" {
@@ -293,7 +316,43 @@ func DisplayError(data []byte, err error, opts ...PrintOption) string {
 			builder.WriteString("Hint: ")
 			builder.WriteString(suggestion)
 		}
+	case *parsing.ErrParsing:
+		x, y := DetermineCoords(data, reason.StartPos)
 
+		builder.WriteString("Parsing error at the ")
+		builder.WriteString(gcint.GetOrdinalSuffix(x))
+		builder.WriteString(" character of the ")
+		builder.WriteString(gcint.GetOrdinalSuffix(y))
+		builder.WriteString(" line:")
+		builder.WriteRune('\n')
+		builder.WriteRune('\t')
+		builder.WriteString(reason.Reason.Error())
+		builder.WriteRune('\n')
+		builder.WriteRune('\n')
+
+		opts = append(opts, WithDelta(reason.Delta))
+
+		var table gfch.RuneTable
+
+		err := table.FromBytes(bytes.Split(PrintSyntaxError(data, reason.StartPos, opts...), []byte("\n")))
+		if err != nil {
+			panic(err.Error())
+		}
+
+		err = BoxStyle.Apply(&table)
+		if err != nil {
+			panic(err.Error())
+		}
+
+		_, _ = builder.Write(table.Byte())
+		builder.WriteRune('\n')
+
+		suggestion := reason.Suggestion
+		if suggestion != "" {
+			builder.WriteRune('\n')
+			builder.WriteString("Hint: ")
+			builder.WriteString(suggestion)
+		}
 	default:
 		builder.WriteString("Error: ")
 		builder.WriteString(err.Error())

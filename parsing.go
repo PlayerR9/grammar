@@ -35,14 +35,14 @@ const (
 
 // Parser is the parser of the grammar.
 type Parser[T ast.Noder, S grammar.TokenTyper] struct {
-	// l is the lexer.
-	l *lexing.Lexer[S]
+	// lexer is the lexer.
+	lexer *lexing.Lexer[S]
 
-	// p is the parser.
-	p *parsing.Parser[S]
+	// parser is the parser.
+	parser *parsing.Parser[S]
 
-	// b is the ast builder.
-	b *ast.Make[T, S]
+	// builder is the ast builder.
+	builder *ast.Make[T, S]
 
 	// debug is the debug setting.
 	debug DebugSetting
@@ -68,10 +68,10 @@ func NewParser[T ast.Noder, S grammar.TokenTyper](l *lexing.Lexer[S], p *parsing
 	}
 
 	return &Parser[T, S]{
-		l:     l,
-		p:     p,
-		b:     b,
-		debug: ShowNone,
+		lexer:   l,
+		parser:  p,
+		builder: b,
+		debug:   ShowNone,
 	}
 }
 
@@ -105,7 +105,7 @@ func (p *Parser[T, S]) Parse(data []byte) (T, error) {
 		fmt.Println()
 	}
 
-	tokens := lexing.FullLex(p.l, p.data)
+	tokens := p.lexer.FullLex(p.data)
 
 	if p.debug&ShowLex != 0 {
 		fmt.Println("Debug option show_lex is enabled, printing tokens:")
@@ -115,11 +115,11 @@ func (p *Parser[T, S]) Parse(data []byte) (T, error) {
 		fmt.Println()
 	}
 
-	if err := p.l.Error(); err != nil {
-		return *new(T), err
+	if p.lexer.Err != nil {
+		return *new(T), p.lexer.Err
 	}
 
-	forest, err := parsing.FullParse(p.p, tokens)
+	forest := p.parser.FullParse(tokens)
 
 	if p.debug&ShowTree != 0 {
 		fmt.Println("Debug option show_tree is enabled, printing forest:")
@@ -132,13 +132,13 @@ func (p *Parser[T, S]) Parse(data []byte) (T, error) {
 		fmt.Println()
 	}
 
-	if err != nil {
-		return *new(T), fmt.Errorf("error while parsing: %w", err)
-	} else if len(forest) != 1 {
-		return *new(T), fmt.Errorf("expected 1 tree, got %d trees instead", len(forest))
+	if p.parser.Err != nil {
+		return *new(T), p.parser.Err
+	} else if len(forest) == 0 {
+		return *new(T), fmt.Errorf("expected at least 1 tree, got 0 trees instead")
 	}
 
-	nodes, err := p.b.Apply(forest[0])
+	nodes, err := p.builder.Apply(forest[0])
 
 	if p.debug&ShowAst != 0 {
 		fmt.Println("Debug option show_ast is enabled, printing nodes:")

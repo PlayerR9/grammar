@@ -128,6 +128,40 @@ func (m *Matcher[S]) AddToMatch(symbol S, word string) error {
 	return nil
 }
 
+func (m *Matcher[S]) match_first(scanner io.RuneScanner) error {
+	c, _, err := scanner.ReadRune()
+	if err != nil {
+		return err
+	}
+
+	m.indices = m.indices[:0]
+	m.prev = nil
+	m.got = &c
+	m.at = 0
+	m.chars = m.chars[:0]
+
+	for i, rule := range m.rules {
+		char, _ := rule.CharAt(m.at)
+
+		if char == c {
+			m.indices = append(m.indices, i)
+		}
+	}
+
+	if len(m.indices) == 0 {
+		_ = scanner.UnreadRune()
+
+		return m.make_error()
+	}
+
+	m.prev = &c
+	m.at++
+
+	m.chars = append(m.chars, c)
+
+	return nil
+}
+
 // filter filters the rules to match.
 //
 // Parameters:
@@ -163,18 +197,18 @@ func (m *Matcher[S]) filter(scanner io.RuneScanner) (bool, error) {
 		_ = scanner.UnreadRune()
 
 		tmp, ok := m.filter_size(m.indices)
-		if !ok {
-			return true, nil
+		if ok {
+			m.indices = tmp
 		}
 
-		m.indices = tmp
-	} else {
-		m.indices = tmp
-
-		m.prev = &char
-		m.at++
-		m.chars = append(m.chars, char)
+		return true, nil
 	}
+
+	m.indices = tmp
+
+	m.prev = &char
+	m.at++
+	m.chars = append(m.chars, char)
 
 	return false, nil
 }
@@ -199,40 +233,6 @@ func (m *Matcher[S]) make_error() error {
 	}
 
 	return NewErrUnexpectedRune(m.prev, m.got, chars...)
-}
-
-func (m *Matcher[S]) match_first(scanner io.RuneScanner) error {
-	c, _, err := scanner.ReadRune()
-	if err != nil {
-		return err
-	}
-
-	m.indices = m.indices[:0]
-	m.prev = nil
-	m.got = &c
-	m.at = 0
-	m.chars = m.chars[:0]
-
-	for i, rule := range m.rules {
-		char, _ := rule.CharAt(m.at)
-
-		if char == c {
-			m.indices = append(m.indices, i)
-		}
-	}
-
-	if len(m.indices) == 0 {
-		_ = scanner.UnreadRune()
-
-		return m.make_error()
-	}
-
-	m.prev = &c
-	m.at++
-
-	m.chars = append(m.chars, c)
-
-	return nil
 }
 
 // Match matches the next characters of the matcher.
@@ -408,4 +408,14 @@ func RightLex(scanner io.RuneScanner, lex_f LexFunc) ([]rune, error) {
 	}
 
 	return chars, nil
+}
+
+func (m *Matcher[S]) GetWords() []string {
+	var words []string
+
+	for _, rule := range m.rules {
+		words = append(words, string(rule.chars))
+	}
+
+	return words
 }

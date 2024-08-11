@@ -1,4 +1,4 @@
-package errors
+package lexing
 
 import (
 	gcers "github.com/PlayerR9/go-commons/errors"
@@ -66,6 +66,8 @@ func (lt *LavenshteinTable) AddWord(word string) error {
 //
 // Parameters:
 //   - target: The target.
+//   - limit: The max distance a word can have to be considered a match. Non-positive limit will cause
+//     all words to be ignored.
 //
 // Returns:
 //   - string: The closest word.
@@ -74,7 +76,7 @@ func (lt *LavenshteinTable) AddWord(word string) error {
 // Errors:
 //   - *common.ErrInvalidParameter: If the target is empty.
 //   - *ErrNoClosestWordFound: If no closest word is found.
-func (lt *LavenshteinTable) Closest(target []rune) (string, error) {
+func (lt LavenshteinTable) Closest(target []rune, limit int) (string, error) {
 	if len(target) == 0 {
 		return "", gcers.NewErrInvalidParameter("target", gcers.NewErrEmpty("slice of runes"))
 	}
@@ -86,6 +88,10 @@ func (lt *LavenshteinTable) Closest(target []rune) (string, error) {
 
 	for i, word := range lt.word_list {
 		d := levenshtein_distance(target, target_len, word, lt.word_length_list[i])
+
+		if d > limit {
+			continue
+		}
 
 		if closest_idx == -1 || d < min {
 			min = d
