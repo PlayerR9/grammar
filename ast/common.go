@@ -1,26 +1,11 @@
 package ast
 
 import (
-	"fmt"
+	"errors"
 
 	gcers "github.com/PlayerR9/go-commons/errors"
-	dbg "github.com/PlayerR9/go-debug/assert"
 	gr "github.com/PlayerR9/grammar/grammar"
 )
-
-// PrintAst stringifies the AST.
-//
-// Parameters:
-//   - root: The root of the AST.
-//
-// Returns:
-//   - string: The AST as a string.
-func PrintAst[N Noder](root N) string {
-	str, err := PrintTree(root)
-	dbg.AssertErr(err, "PrintTree(%s)", root.String())
-
-	return str
-}
 
 // LeftAstFunc is a function that parses the left-recursive AST.
 //
@@ -55,15 +40,14 @@ func LeftRecursive[N Noder, T gr.TokenTyper](root *gr.Token[T], lhs_type T, f Le
 
 	for root != nil {
 		if root.Type != lhs_type {
-
-			return nodes, fmt.Errorf("expected %q, got %q instead", lhs_type.String(), root.Type.String())
+			return nodes, NewErrInvalidType(lhs_type, &root.Type)
 		}
 
 		children, err := ExtractChildren(root)
 		if err != nil {
 			return nodes, err
 		} else if len(children) == 0 {
-			return nodes, fmt.Errorf("expected at least 1 child, got 0 children instead")
+			return nodes, errors.New("expected at least 1 child, got 0 children instead")
 		}
 
 		last_child := children[len(children)-1]
@@ -76,12 +60,10 @@ func LeftRecursive[N Noder, T gr.TokenTyper](root *gr.Token[T], lhs_type T, f Le
 		}
 
 		sub_nodes, err := f(children)
-		if len(sub_nodes) > 0 {
-			nodes = append(nodes, sub_nodes...)
-		}
+		nodes = append(nodes, sub_nodes...)
 
 		if err != nil {
-			return nodes, fmt.Errorf("in %q: %w", root.Type.String(), err)
+			return nodes, NewErrInRule(root.Type, err)
 		}
 	}
 
@@ -153,6 +135,10 @@ func ExtractData[T gr.TokenTyper](node *gr.Token[T]) (string, error) {
 func ExtractChildren[T gr.TokenTyper](node *gr.Token[T]) ([]*gr.Token[T], error) {
 	if node == nil {
 		return nil, gcers.NewErrNilParameter("node")
+	}
+
+	if node.FirstChild == nil {
+		return nil, errors.New("node is a leaf")
 	}
 
 	var children []*gr.Token[T]

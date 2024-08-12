@@ -8,6 +8,9 @@ import (
 	"github.com/PlayerR9/grammar/grammar"
 	"github.com/PlayerR9/grammar/lexing"
 	"github.com/PlayerR9/grammar/parsing"
+	"github.com/PlayerR9/grammar/traversing"
+
+	dbg "github.com/PlayerR9/go-debug/assert"
 )
 
 // DebugSetting is the debug setting.
@@ -144,7 +147,14 @@ func (p *Parser[T, S]) Parse(data []byte) (T, error) {
 		fmt.Println("Debug option show_ast is enabled, printing nodes:")
 
 		for _, node := range nodes {
-			fmt.Println(ast.PrintAst(node))
+			dbg.AssertNotNil(node, "node")
+
+			p := &traversing.AstPrinter{}
+
+			err := traversing.Apply(p, node)
+			dbg.AssertErr(err, "traversing.Apply(p, %s)", node.String())
+
+			fmt.Println(p.String())
 			fmt.Println()
 		}
 

@@ -5,6 +5,7 @@ import (
 )
 
 var (
+	// filter_non_nil_noders is a filter that filters out Noders that are nil.
 	filter_non_nil_noders gcslc.PredicateFilter[Noder]
 )
 

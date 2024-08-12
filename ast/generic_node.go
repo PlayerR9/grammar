@@ -4,7 +4,7 @@ package ast
 import (
 	"io"
 	"strconv"
-	"strings"	
+	"strings"
 )
 
 // NodeIterator is a pull-based iterator that iterates over the children of a Node.
@@ -30,13 +30,36 @@ func (iter *NodeIterator[N]) Restart() {
 	iter.current = iter.first
 }
 
+// NodeReverseIterator is a pull-based iterator that iterates over the children of a Node in reverse order.
+type NodeReverseIterator[N NodeTyper] struct {
+	last, current *Node[N]
+}
+
+// Consume implements the Iterater interface.
+func (iter *NodeReverseIterator[N]) Consume() (Noder, error) {
+	n := iter.current
+
+	if n == nil {
+		return nil, io.EOF
+	}
+
+	iter.current = n.PrevSibling
+
+	return n, nil
+}
+
+// Restart implements the Iterater interface.
+func (iter *NodeReverseIterator[N]) Restart() {
+	iter.current = iter.last
+}
+
 // Node is a node in a ast.
 type Node[N NodeTyper] struct {
 	Parent, FirstChild, NextSibling, LastChild, PrevSibling *Node[N]
 
 	Type N
 	Data string
-	Pos int
+	Pos  int
 }
 
 // IsLeaf implements the Noder interface.
@@ -54,7 +77,7 @@ func (tn *Node[N]) AddChild(target Noder) {
 	if !ok {
 		return
 	}
-	
+
 	tmp.NextSibling = nil
 	tmp.PrevSibling = nil
 
@@ -76,7 +99,7 @@ func (tn *Node[N]) AddChildren(children []Noder) {
 	if len(children) == 0 {
 		return
 	}
-	
+
 	var valid_children []*Node[N]
 
 	for _, child := range children {
@@ -135,6 +158,14 @@ func (tn *Node[N]) Iterator() Iterater {
 	return &NodeIterator[N]{
 		first:   tn.FirstChild,
 		current: tn.FirstChild,
+	}
+}
+
+// Iterator implements the Noder interface.
+func (tn *Node[N]) ReverseIterator() Iterater {
+	return &NodeReverseIterator[N]{
+		last:    tn.LastChild,
+		current: tn.LastChild,
 	}
 }
 

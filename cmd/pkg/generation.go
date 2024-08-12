@@ -29,6 +29,9 @@ type GenData struct {
 	IteratorName string
 	IteratorSig  string
 
+	ReverseIteratorName string
+	ReverseIteratorSig  string
+
 	Generics string
 
 	Noder string
@@ -66,6 +69,16 @@ func init() {
 	})
 
 	tmp.AddDoFunc(func(gd *GenData) error {
+		if gd.PackageName == "ast" {
+			gd.Noder = "Noder"
+		} else {
+			gd.Noder = "ast.Noder"
+		}
+
+		return nil
+	})
+
+	tmp.AddDoFunc(func(gd *GenData) error {
 		sig, err := ggen.MakeTypeSign(GenericsFlag, gd.NodeName, "Iterator")
 		if err != nil {
 			return fmt.Errorf("failed to make iterator sig: %w", err)
@@ -84,20 +97,27 @@ func init() {
 
 	tmp.AddDoFunc(func(gd *GenData) error {
 		if gd.PackageName == "ast" {
-			gd.Noder = "Noder"
+			gd.IteratorIntf = "Iterater"
 		} else {
-			gd.Noder = "ast.Noder"
+			gd.IteratorIntf = "ast.Iterater"
 		}
 
 		return nil
 	})
 
 	tmp.AddDoFunc(func(gd *GenData) error {
-		if gd.PackageName == "ast" {
-			gd.IteratorIntf = "Iterater"
-		} else {
-			gd.IteratorIntf = "ast.Iterater"
+		sig, err := ggen.MakeTypeSign(GenericsFlag, gd.NodeName, "ReverseIterator")
+		if err != nil {
+			return fmt.Errorf("failed to make iterator sig: %w", err)
 		}
+
+		gd.ReverseIteratorSig = sig
+
+		return nil
+	})
+
+	tmp.AddDoFunc(func(gd *GenData) error {
+		gd.ReverseIteratorName = gd.NodeName + "ReverseIterator"
 
 		return nil
 	})
@@ -142,6 +162,29 @@ func (iter *{{ .IteratorSig }}) Consume() ({{ .Noder }}, error) {
 // Restart implements the {{ .IteratorIntf }} interface.
 func (iter *{{ .IteratorSig }}) Restart() {
 	iter.current = iter.first
+}
+
+// {{ .ReverseIteratorName }} is a pull-based iterator that iterates over the children of a {{ .NodeName }} in reverse order.
+type {{ .ReverseIteratorName }}{{ .Generics }} struct {
+	last, current *{{ .NodeSig }}
+}
+
+// Consume implements the Iterater interface.
+func (iter *{{ .ReverseIteratorSig }}) Consume() ({{ .Noder }}, error) {
+	n := iter.current
+
+	if n == nil {
+		return nil, io.EOF
+	}
+
+	iter.current = n.PrevSibling
+
+	return n, nil
+}
+
+// Restart implements the {{ .IteratorIntf }} interface.
+func (iter *{{ .ReverseIteratorSig }}) Restart() {
+	iter.current = iter.last
 }
 
 // {{ .NodeName }} is a node in a ast.

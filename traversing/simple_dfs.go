@@ -1,4 +1,4 @@
-package make
+package traversing
 
 import (
 	"io"
@@ -28,20 +28,26 @@ type SimpleDFS[N ast.Noder] struct {
 //   - f: The function that is called for each node.
 //
 // Returns:
-//   - *SimpleDFS[N]: The new SimpleDFS.
+//   - SimpleDFS[N]: The new SimpleDFS.
 //
 // If f is nil, simpleDFS is returned as nil.
-func NewSimpleDFS[N ast.Noder](f SimpleDFSDoFunc[N]) *SimpleDFS[N] {
+func NewSimpleDFS[N ast.Noder](f SimpleDFSDoFunc[N]) SimpleDFS[N] {
 	if f == nil {
-		return nil
+		return SimpleDFS[N]{}
 	}
 
-	return &SimpleDFS[N]{
-		do_func: f,
-	}
+	return SimpleDFS[N]{do_func: f}
 }
 
-// Apply applies the SimpleDFS.
+// SetDoFunc sets the function that is called for each node.
+//
+// Parameters:
+//   - f: The function that is called for each node.
+func (s *SimpleDFS[N]) SetDoFunc(f SimpleDFSDoFunc[N]) {
+	s.do_func = f
+}
+
+// Apply applies the SimpleDFS. Does nothing if the do_func is nil.
 //
 // Parameters:
 //   - root: The root of the AST.
@@ -49,7 +55,9 @@ func NewSimpleDFS[N ast.Noder](f SimpleDFSDoFunc[N]) *SimpleDFS[N] {
 // Returns:
 //   - error: An error if the SimpleDFS could not be applied.
 func (s SimpleDFS[N]) Apply(root N) error {
-	dbg.Assert(s.do_func != nil, "do_func should not be nil")
+	if s.do_func == nil {
+		return nil
+	}
 
 	stack := []N{root}
 
@@ -66,8 +74,8 @@ func (s SimpleDFS[N]) Apply(root N) error {
 			continue
 		}
 
-		iter := top.Iterator()
-		dbg.Assert(iter != nil, "iterator expected to be non-nil")
+		iter := top.ReverseIterator()
+		dbg.AssertNotNil(iter, "iter")
 
 		for {
 			value, err := iter.Consume()

@@ -148,14 +148,12 @@ func (m *Make[N, T]) ApplyToken(token *gr.Token[T]) ([]N, error) {
 //   - tk_type: The expected type of the token.
 //
 // Returns:
-//   - error: An error if the token is not of the expected type.
+//   - error: An error of type *ErrInvalidType if the token is not of the expected type.
 func CheckTokenType[T gr.TokenTyper](tk *gr.Token[T], tk_type T) error {
 	if tk == nil {
-		return fmt.Errorf("expected %q, got nil instead", tk_type.String())
-	}
-
-	if tk.Type != tk_type {
-		return fmt.Errorf("expected %q, got %q instead", tk_type.String(), tk.Type.String())
+		return NewErrInvalidType(tk_type, nil)
+	} else if tk.Type != tk_type {
+		return NewErrInvalidType(tk_type, &tk.Type)
 	}
 
 	return nil
