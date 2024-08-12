@@ -20,9 +20,9 @@ type PartsBuilder[N Noder] struct {
 // NewPartsBuilder creates a new parts builder.
 //
 // Returns:
-//   - *PartsBuilder[N]: The parts builder.
-func NewPartsBuilder[N Noder]() *PartsBuilder[N] {
-	return &PartsBuilder[N]{
+//   - PartsBuilder[N]: The parts builder.
+func NewPartsBuilder[N Noder]() PartsBuilder[N] {
+	return PartsBuilder[N]{
 		parts: make([]DoFunc[N], 0),
 	}
 }
@@ -41,7 +41,7 @@ func (a *PartsBuilder[N]) Add(f DoFunc[N]) {
 //
 // Returns:
 //   - []AstDoFunc[N]: The parts of the builder.
-func (a *PartsBuilder[N]) Build() []DoFunc[N] {
+func (a PartsBuilder[N]) Build() []DoFunc[N] {
 	if len(a.parts) == 0 {
 		return nil
 	}

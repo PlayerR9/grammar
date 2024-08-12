@@ -7,4 +7,7 @@ require (
 	github.com/PlayerR9/go-generator v0.1.5
 )
 
-require golang.org/x/exp v0.0.0-20240808152545-0cdaa3abc0fa // indirect
+require (
+	github.com/PlayerR9/go-debug v0.1.2
+	golang.org/x/exp v0.0.0-20240808152545-0cdaa3abc0fa // indirect
+)

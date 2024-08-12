@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	gcers "github.com/PlayerR9/go-commons/errors"
+	dbg "github.com/PlayerR9/go-debug/assert"
 	gr "github.com/PlayerR9/grammar/grammar"
 )
 
@@ -15,8 +16,8 @@ import (
 // Returns:
 //   - string: The AST as a string.
 func PrintAst[N Noder](root N) string {
-	str, _ := PrintTree(root)
-	// luc.AssertErr(err, "PrintTree(root)")
+	str, err := PrintTree(root)
+	dbg.AssertErr(err, "PrintTree(%s)", root.String())
 
 	return str
 }
@@ -42,12 +43,19 @@ type LeftAstFunc[N Noder, T gr.TokenTyper] func(children []*gr.Token[T]) ([]N, e
 //   - []N: The left-recursive AST.
 //   - error: An error if the left-recursive AST could not be parsed.
 func LeftRecursive[N Noder, T gr.TokenTyper](root *gr.Token[T], lhs_type T, f LeftAstFunc[N, T]) ([]N, error) {
-	// luc.AssertNil(root, "root")
+	if f == nil {
+		return nil, gcers.NewErrNilParameter("f")
+	}
+
+	if root == nil {
+		return nil, nil
+	}
 
 	var nodes []N
 
 	for root != nil {
 		if root.Type != lhs_type {
+
 			return nodes, fmt.Errorf("expected %q, got %q instead", lhs_type.String(), root.Type.String())
 		}
 

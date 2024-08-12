@@ -236,7 +236,7 @@ func apply_reduce[S gr.TokenTyper](parser *Parser[S], rule *Rule[S]) error {
 
 	parser.Accept()
 
-	tk := gr.NewToken(rule.lhs, "", last_token.At, last_token.Lookahead)
+	tk := gr.NewToken(rule.lhs, "", popped[0].At, last_token.Lookahead)
 	tk.AddChildren(popped)
 
 	parser.Push(tk)
