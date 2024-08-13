@@ -4,15 +4,14 @@ import (
 	"strings"
 
 	itr "github.com/PlayerR9/go-commons/iterator"
+	gcstr "github.com/PlayerR9/go-commons/strings"
 	dbg "github.com/PlayerR9/go-debug/assert"
-
-	ustr "github.com/PlayerR9/grammar/util/strings"
 )
 
 // AstPrinter is a tree printer.
 type AstPrinter struct {
 	// lines is the list of lines.
-	lines *ustr.LineBuffer
+	lines *gcstr.LineBuffer
 
 	// seen is the list of seen nodes.
 	seen map[TreeNoder]bool
@@ -29,7 +28,13 @@ type AstPrinter struct {
 
 // Reset implements the Traverser interface.
 func (p *AstPrinter) Reset() {
-	p.lines.Reset()
+	if p.lines != nil {
+		p.lines.Reset()
+	} else {
+		var lb gcstr.LineBuffer
+
+		p.lines = &lb
+	}
 
 	if len(p.seen) > 0 {
 		for k := range p.seen {
@@ -67,6 +72,7 @@ func (p *AstPrinter) Apply(node TreeNoder) ([]TravData, error) {
 		return nil, nil
 	}
 
+	p.lines.AddString(node.String())
 	p.lines.Accept()
 
 	p.seen[node] = true

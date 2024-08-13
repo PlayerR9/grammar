@@ -5,7 +5,7 @@ import (
 	"strconv"
 	"strings"
 
-	itr "github.com/PlayerR9/go-commons/iterator"
+	"github.com/PlayerR9/go-commons/iterator"
 )
 
 // NodeIterator is a pull-based iterator that iterates over the children of a Node.
@@ -14,24 +14,22 @@ type NodeIterator[N NodeTyper] struct {
 }
 
 // Consume implements the Iterater interface.
-func (iter *NodeIterator[N]) Apply(fn itr.IteratorFunc) error {
+func (iter *NodeIterator[N]) Apply(fn iterator.IteratorFunc) error {
 	if iter.current == nil {
-		return itr.ErrExausted
+		return iterator.ErrExausted
 	}
 
-	n := iter.current
-
-	err := fn(n)
+	err := fn(iter.current)
 	if err != nil {
 		return err
 	}
 
-	iter.current = n.NextSibling
+	iter.current = iter.current.NextSibling
 
 	return nil
 }
 
-// Reset implements the Iterater interface.
+// Restart implements the Iterater interface.
 func (iter *NodeIterator[N]) Reset() {
 	iter.current = iter.first
 }
@@ -42,9 +40,9 @@ type NodeReverseIterator[N NodeTyper] struct {
 }
 
 // Consume implements the Iterater interface.
-func (iter *NodeReverseIterator[N]) Apply(fn itr.IteratorFunc) error {
+func (iter *NodeReverseIterator[N]) Apply(fn iterator.IteratorFunc) error {
 	if iter.current == nil {
-		return itr.ErrExausted
+		return iterator.ErrExausted
 	}
 
 	err := fn(iter.current)
@@ -57,7 +55,7 @@ func (iter *NodeReverseIterator[N]) Apply(fn itr.IteratorFunc) error {
 	return nil
 }
 
-// Reset implements the Iterater interface.
+// Restart implements the Iterater interface.
 func (iter *NodeReverseIterator[N]) Reset() {
 	iter.current = iter.last
 }
@@ -68,11 +66,11 @@ type Node[N NodeTyper] struct {
 
 	Type N
 	Data string
-	Pos  int
+	Pos int
 }
 
 // IsLeaf implements the Noder interface.
-func (tn *Node[N]) IsLeaf() bool {
+func (tn Node[N]) IsLeaf() bool {
 	return tn.FirstChild == nil
 }
 
@@ -86,7 +84,7 @@ func (tn *Node[N]) AddChild(target Noder) {
 	if !ok {
 		return
 	}
-
+	
 	tmp.NextSibling = nil
 	tmp.PrevSibling = nil
 
@@ -108,7 +106,7 @@ func (tn *Node[N]) AddChildren(children []Noder) {
 	if len(children) == 0 {
 		return
 	}
-
+	
 	var valid_children []*Node[N]
 
 	for _, child := range children {
@@ -163,15 +161,15 @@ func (tn *Node[N]) AddChildren(children []Noder) {
 }
 
 // Iterator implements the Noder interface.
-func (tn *Node[N]) Iterator() itr.Iterable {
+func (tn Node[N]) Iterator() iterator.Iterable {
 	return &NodeIterator[N]{
 		first:   tn.FirstChild,
 		current: tn.FirstChild,
 	}
 }
 
-// Iterator implements the Noder interface.
-func (tn *Node[N]) ReverseIterator() itr.Iterable {
+// ReverseIterator implements the Noder interface.
+func (tn Node[N]) ReverseIterator() iterator.Iterable {
 	return &NodeReverseIterator[N]{
 		last:    tn.LastChild,
 		current: tn.LastChild,
@@ -179,7 +177,7 @@ func (tn *Node[N]) ReverseIterator() itr.Iterable {
 }
 
 // String implements the Noder interface.
-func (tn *Node[N]) String() string {
+func (tn Node[N]) String() string {
 	var builder strings.Builder
 
 	builder.WriteString(strconv.Itoa(tn.Pos))
@@ -205,9 +203,9 @@ func (tn *Node[N]) String() string {
 //   - pos: The position of the node in the source code.
 //
 // Returns:
-//   - *Node[N]: A pointer to the newly created node. It is never nil.
-func NewNode[N NodeTyper](n_type N, data string, pos int) *Node[N] {
-	return &Node[N]{
+//   - Node[N]: The newly created node.
+func NewNode[N NodeTyper](n_type N, data string, pos int) Node[N] {
+	return Node[N]{
 		Type: n_type,
 		Data: data,
 		Pos:  pos,

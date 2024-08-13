@@ -3,8 +3,8 @@ module github.com/PlayerR9/grammar
 go 1.22.6
 
 require (
-	github.com/PlayerR9/go-commons v0.1.6
-	github.com/PlayerR9/go-generator v0.1.6
+	github.com/PlayerR9/go-commons v0.1.7
+	github.com/PlayerR9/go-generator v0.1.7
 )
 
 require (
