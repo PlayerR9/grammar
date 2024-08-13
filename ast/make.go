@@ -65,12 +65,10 @@ func (m *Make[N, T]) AddEntry(t T, steps []DoFunc[N]) error {
 // Returns:
 //   - []N: The AST.
 //   - error: An error if the AST could not be created.
-func (m *Make[N, T]) Apply(tree *gr.TokenTree[T]) ([]N, error) {
-	if tree == nil {
+func (m *Make[N, T]) Apply(root *gr.Token[T]) ([]N, error) {
+	if root == nil {
 		return nil, gcers.NewErrNilParameter("tree")
 	}
-
-	root := tree.Root()
 
 	steps, ok := m.ast_map[root.Type]
 	if !ok {

@@ -2,9 +2,10 @@
 package ast
 
 import (
-	"io"
 	"strconv"
 	"strings"
+
+	itr "github.com/PlayerR9/go-commons/iterator"
 )
 
 // NodeIterator is a pull-based iterator that iterates over the children of a Node.
@@ -13,20 +14,25 @@ type NodeIterator[N NodeTyper] struct {
 }
 
 // Consume implements the Iterater interface.
-func (iter *NodeIterator[N]) Consume() (Noder, error) {
+func (iter *NodeIterator[N]) Apply(fn itr.IteratorFunc) error {
+	if iter.current == nil {
+		return itr.ErrExausted
+	}
+
 	n := iter.current
 
-	if n == nil {
-		return nil, io.EOF
+	err := fn(n)
+	if err != nil {
+		return err
 	}
 
 	iter.current = n.NextSibling
 
-	return n, nil
+	return nil
 }
 
-// Restart implements the Iterater interface.
-func (iter *NodeIterator[N]) Restart() {
+// Reset implements the Iterater interface.
+func (iter *NodeIterator[N]) Reset() {
 	iter.current = iter.first
 }
 
@@ -36,20 +42,23 @@ type NodeReverseIterator[N NodeTyper] struct {
 }
 
 // Consume implements the Iterater interface.
-func (iter *NodeReverseIterator[N]) Consume() (Noder, error) {
-	n := iter.current
-
-	if n == nil {
-		return nil, io.EOF
+func (iter *NodeReverseIterator[N]) Apply(fn itr.IteratorFunc) error {
+	if iter.current == nil {
+		return itr.ErrExausted
 	}
 
-	iter.current = n.PrevSibling
+	err := fn(iter.current)
+	if err != nil {
+		return err
+	}
 
-	return n, nil
+	iter.current = iter.current.PrevSibling
+
+	return nil
 }
 
-// Restart implements the Iterater interface.
-func (iter *NodeReverseIterator[N]) Restart() {
+// Reset implements the Iterater interface.
+func (iter *NodeReverseIterator[N]) Reset() {
 	iter.current = iter.last
 }
 
@@ -154,7 +163,7 @@ func (tn *Node[N]) AddChildren(children []Noder) {
 }
 
 // Iterator implements the Noder interface.
-func (tn *Node[N]) Iterator() Iterater {
+func (tn *Node[N]) Iterator() itr.Iterable {
 	return &NodeIterator[N]{
 		first:   tn.FirstChild,
 		current: tn.FirstChild,
@@ -162,7 +171,7 @@ func (tn *Node[N]) Iterator() Iterater {
 }
 
 // Iterator implements the Noder interface.
-func (tn *Node[N]) ReverseIterator() Iterater {
+func (tn *Node[N]) ReverseIterator() itr.Iterable {
 	return &NodeReverseIterator[N]{
 		last:    tn.LastChild,
 		current: tn.LastChild,

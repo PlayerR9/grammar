@@ -1,10 +1,8 @@
 package traversing
 
 import (
-	"io"
-
+	itr "github.com/PlayerR9/go-commons/iterator"
 	dbg "github.com/PlayerR9/go-debug/assert"
-	ast "github.com/PlayerR9/grammar/ast"
 )
 
 // SimpleDFSDoFunc is a function that is called for each node.
@@ -14,10 +12,10 @@ import (
 //
 // Returns:
 //   - error: An error if the DFS could not be applied.
-type SimpleDFSDoFunc[N ast.Noder] func(node N) error
+type SimpleDFSDoFunc[N TreeNoder] func(node N) error
 
 // SimpleDFS is a simple depth-first search.
-type SimpleDFS[N ast.Noder] struct {
+type SimpleDFS[N TreeNoder] struct {
 	// do_func is the function that is called for each node.
 	do_func SimpleDFSDoFunc[N]
 }
@@ -31,7 +29,7 @@ type SimpleDFS[N ast.Noder] struct {
 //   - SimpleDFS[N]: The new SimpleDFS.
 //
 // If f is nil, simpleDFS is returned as nil.
-func NewSimpleDFS[N ast.Noder](f SimpleDFSDoFunc[N]) SimpleDFS[N] {
+func NewSimpleDFS[N TreeNoder](f SimpleDFSDoFunc[N]) SimpleDFS[N] {
 	if f == nil {
 		return SimpleDFS[N]{}
 	}
@@ -74,19 +72,17 @@ func (s SimpleDFS[N]) Apply(root N) error {
 			continue
 		}
 
-		iter := top.ReverseIterator()
-		dbg.AssertNotNil(iter, "iter")
+		fn := func(elem any) error {
+			value := dbg.AssertConv[N](elem, "elem")
 
-		for {
-			value, err := iter.Consume()
-			if err == io.EOF {
-				break
-			}
+			stack = append(stack, value)
 
-			dbg.AssertErr(err, "iter.Consume()")
+			return nil
+		}
 
-			child := dbg.AssertConv[N](value, "value")
-			stack = append(stack, child)
+		err = itr.Iterate(top.ReverseIterator(), fn)
+		if err != nil {
+			return err
 		}
 	}
 

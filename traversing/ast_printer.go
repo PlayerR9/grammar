@@ -1,17 +1,11 @@
 package traversing
 
 import (
-	"io"
 	"strings"
 
+	itr "github.com/PlayerR9/go-commons/iterator"
 	dbg "github.com/PlayerR9/go-debug/assert"
 )
-
-type TreeNoder interface {
-	IsLeaf() bool
-	String() string
-	Iterator() Iterater
-}
 
 // AstPrinter is a tree printer.
 type AstPrinter struct {
@@ -90,16 +84,10 @@ func (p *AstPrinter) Apply(node TreeNoder) ([]TravData, error) {
 	p.same_level = false
 	p.is_last = false
 
-	iter := node.Iterator()
-	dbg.AssertNotNil(iter, "iter")
+	var children []TravData
 
-	for {
-		err := iter.Consume()
-		if err == io.EOF {
-			break
-		}
-
-		dbg.AssertErr(err, "iter.Consume()")
+	fn := func(elem any) error {
+		value := dbg.AssertConv[TreeNoder](elem, "elem")
 
 		td := TravData{
 			Node: value,
@@ -111,6 +99,13 @@ func (p *AstPrinter) Apply(node TreeNoder) ([]TravData, error) {
 		}
 
 		children = append(children, td)
+
+		return nil
+	}
+
+	err := itr.Iterate(node.Iterator(), fn)
+	if err != nil {
+		return nil, err
 	}
 
 	if len(children) == 0 {

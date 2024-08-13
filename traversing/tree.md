@@ -1,16 +1,17 @@
-package grammar
+package traversing
 
 import (
 	"slices"
 	"strings"
 
 	gcers "github.com/PlayerR9/go-commons/errors"
+	gr "github.com/PlayerR9/grammar/grammar"
 )
 
 // TokenTree is a token tree.
-type TokenTree[S TokenTyper] struct {
+type TokenTree[S gr.TokenTyper] struct {
 	// root is the root of the tree.
-	root *Token[S]
+	root *gr.Token[S]
 }
 
 // String implements the fmt.Stringer interface.

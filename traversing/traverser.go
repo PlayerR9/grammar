@@ -3,7 +3,8 @@ package traversing
 import (
 	gcers "github.com/PlayerR9/go-commons/errors"
 	dbg "github.com/PlayerR9/go-debug/assert"
-	ast "github.com/PlayerR9/grammar/ast"
+
+	itr "github.com/PlayerR9/go-commons/iterator"
 )
 
 // Traverser is an interface that defines the behavior of a traverser.
@@ -27,13 +28,42 @@ type Traverser interface {
 	//   - error: An error if the traversal failed.
 	//
 	// WARNING: Should not be called directly. Use Apply instead.
-	Apply(node ast.Noder) ([]TravData, error)
+	Apply(node TreeNoder) ([]TravData, error)
+}
+
+// TreeNoder is an interface that defines the behavior of a tree node.
+type TreeNoder interface {
+	// IsLeaf is a method that checks whether the node is a leaf.
+	//
+	// Returns:
+	//   - bool: True if the node is a leaf, false otherwise.
+	IsLeaf() bool
+
+	// String is a method that returns a string representation of the node.
+	//
+	// Returns:
+	//   - string: The string representation.
+	String() string
+
+	// Iterator is a method that returns an iterator that iterates over the direct
+	// children of the node.
+	//
+	// Returns:
+	//   - Iterater: The iterator. Never returns nil.
+	Iterator() itr.Iterable
+
+	// ReverseIterator is a method that returns an iterator that iterates over the
+	// direct children of the node in reverse order.
+	//
+	// Returns:
+	//   - iterator.Iterable: The iterator. Never returns nil.
+	ReverseIterator() itr.Iterable
 }
 
 // TravData is a container for the data associated with the node before the node is visited.
 type TravData struct {
 	// Node is the node.
-	Node ast.Noder
+	Node TreeNoder
 
 	// Data is the data associated with the node before the node is visited.
 	Data Traverser
@@ -46,7 +76,7 @@ type TravData struct {
 //
 // Returns:
 //   - error: An error if the Traverser could not be applied.
-func Apply(trav Traverser, root ast.Noder) error {
+func Apply(trav Traverser, root TreeNoder) error {
 	if trav == nil {
 		return gcers.NewErrNilParameter("trav")
 	}

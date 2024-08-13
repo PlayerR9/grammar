@@ -135,10 +135,13 @@ package {{ .PackageName }}
 	"strings"
 
 	"github.com/PlayerR9/grammar/ast"
+	"github.com/PlayerR9/go-commons/iterator"
 ){{ else }}import (
 	"io"
 	"strconv"
-	"strings"	
+	"strings"
+
+	"github.com/PlayerR9/go-commons/iterator"
 ){{ end }}
 
 // {{ .IteratorName }} is a pull-based iterator that iterates over the children of a {{ .NodeName }}.
@@ -147,20 +150,23 @@ type {{ .IteratorName }}{{ .Generics }} struct {
 }
 
 // Consume implements the {{ .IteratorIntf }} interface.
-func (iter *{{ .IteratorSig }}) Consume() ({{ .Noder }}, error) {
-	n := iter.current
-
-	if n == nil {
-		return nil, io.EOF
+func (iter *{{ .IteratorSig }}) Apply(fn iterator.IteratorFunc) error {
+	if iter.current == nil {
+		return iterator.ErrExausted
 	}
 
-	iter.current = n.NextSibling
+	err := fn(iter.current)
+	if err != nil {
+		return err
+	}
 
-	return n, nil
+	iter.current = iter.current.NextSibling
+
+	return nil
 }
 
 // Restart implements the {{ .IteratorIntf }} interface.
-func (iter *{{ .IteratorSig }}) Restart() {
+func (iter *{{ .IteratorSig }}) Reset() {
 	iter.current = iter.first
 }
 
@@ -170,16 +176,19 @@ type {{ .ReverseIteratorName }}{{ .Generics }} struct {
 }
 
 // Consume implements the Iterater interface.
-func (iter *{{ .ReverseIteratorSig }}) Consume() ({{ .Noder }}, error) {
-	n := iter.current
-
-	if n == nil {
-		return nil, io.EOF
+func (iter *{{ .ReverseIteratorSig }}) Apply(fn iterator.IteratorFunc) error {
+	if iter.current == nil {
+		return iterator.ErrExausted
 	}
 
-	iter.current = n.PrevSibling
+	err := fn(iter.current)
+	if err != nil {
+		return err
+	}
 
-	return n, nil
+	iter.current = iter.current.PrevSibling
+
+	return nil
 }
 
 // Restart implements the {{ .IteratorIntf }} interface.
@@ -288,10 +297,18 @@ func (tn *{{ .NodeSig }}) AddChildren(children []{{ .Noder }}) {
 }
 
 // Iterator implements the {{ .Noder }} interface.
-func (tn *{{ .NodeSig }}) Iterator() {{ .IteratorIntf }} {
+func (tn *{{ .NodeSig }}) Iterator() iterator.Iterable {
 	return &{{ .IteratorSig }}{
 		first:   tn.FirstChild,
 		current: tn.FirstChild,
+	}
+}
+
+// ReverseIterator implements the {{ .Noder }} interface.
+func (tn *{{ .NodeSig }}) ReverseIterator() iterator.Iterable {
+	return &{{ .ReverseIteratorSig }}{
+		last:    tn.LastChild,
+		current: tn.LastChild,
 	}
 }
 

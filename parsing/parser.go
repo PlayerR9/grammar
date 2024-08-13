@@ -4,6 +4,7 @@ import (
 	"errors"
 	"slices"
 
+	dbg "github.com/PlayerR9/go-debug/assert"
 	gr "github.com/PlayerR9/grammar/grammar"
 )
 
@@ -176,15 +177,11 @@ func (p *Parser[S]) Accept() {
 //   - parser: The parser.
 //
 // Returns:
-//   - []*grammar.TokenTree[S]: The syntax forest of the parser.
-func get_forest[S gr.TokenTyper](parser *Parser[S]) []*gr.TokenTree[S] {
-	if parser == nil {
-		panic("parser cannot be nil")
-	}
+//   - []*grammar.Token[S]: The syntax forest of the parser.
+func get_forest[S gr.TokenTyper](parser *Parser[S]) []*gr.Token[S] {
+	dbg.AssertNotNil(parser, "parser")
 
-	// luc.Assert(parser != nil, "parser must not be nil")
-
-	var forest []*gr.TokenTree[S]
+	var forest []*gr.Token[S]
 
 	for {
 		top, ok := parser.Pop()
@@ -192,10 +189,9 @@ func get_forest[S gr.TokenTyper](parser *Parser[S]) []*gr.TokenTree[S] {
 			break
 		}
 
-		tree, _ := gr.NewTokenTree(top)
-		// luc.AssertErr(err, "gr.NewTokenTree(top)")
+		dbg.AssertNotNil(top, "top")
 
-		forest = append(forest, tree)
+		forest = append(forest, top)
 	}
 
 	return forest
@@ -250,8 +246,8 @@ func apply_reduce[S gr.TokenTyper](parser *Parser[S], rule *Rule[S]) error {
 //   - tokens: The input stream of the parser.
 //
 // Returns:
-//   - []*gr.TokenTree[S]: The syntax forest of the input stream.
-func (p *Parser[S]) FullParse(tokens []*gr.Token[S]) []*gr.TokenTree[S] {
+//   - []*gr.Token[S]: The syntax forest of the input stream.
+func (p *Parser[S]) FullParse(tokens []*gr.Token[S]) []*gr.Token[S] {
 	p.SetInputStream(tokens)
 
 	ok := p.Shift() // initial shift
