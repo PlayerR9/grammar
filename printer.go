@@ -192,6 +192,9 @@ func PrintSyntaxError(data []byte, start_pos int, opts ...PrintOption) []byte {
 		if after_idx == -1 {
 			before = data[:before_idx]
 			faulty_line = data[before_idx+1:]
+		} else if before_idx == after_idx {
+			before = data[:before_idx]
+			after = data[after_idx+1:]
 		} else {
 			before = data[:before_idx]
 			faulty_line = data[before_idx+1 : after_idx]
