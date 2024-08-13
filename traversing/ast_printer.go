@@ -5,12 +5,14 @@ import (
 
 	itr "github.com/PlayerR9/go-commons/iterator"
 	dbg "github.com/PlayerR9/go-debug/assert"
+
+	ustr "github.com/PlayerR9/grammar/util/strings"
 )
 
 // AstPrinter is a tree printer.
 type AstPrinter struct {
 	// lines is the list of lines.
-	lines []string
+	lines *ustr.LineBuffer
 
 	// seen is the list of seen nodes.
 	seen map[TreeNoder]bool
@@ -27,10 +29,12 @@ type AstPrinter struct {
 
 // Reset implements the Traverser interface.
 func (p *AstPrinter) Reset() {
-	p.lines = p.lines[:0]
+	p.lines.Reset()
 
-	for k := range p.seen {
-		delete(p.seen, k)
+	if len(p.seen) > 0 {
+		for k := range p.seen {
+			delete(p.seen, k)
+		}
 	}
 
 	p.seen = make(map[TreeNoder]bool)
@@ -43,31 +47,28 @@ func (p *AstPrinter) Reset() {
 func (p *AstPrinter) Apply(node TreeNoder) ([]TravData, error) {
 	dbg.AssertNotNil(p, "info")
 
-	var builder strings.Builder
-
 	if p.indent != "" {
-		builder.WriteString(p.indent)
+		p.lines.AddString(p.indent)
 
 		ok := node.IsLeaf()
 		if !ok || p.is_last {
-			builder.WriteString("└── ")
+			p.lines.AddString("└── ")
 		} else {
-			builder.WriteString("├── ")
+			p.lines.AddString("├── ")
 		}
 	}
 
 	// Prevent cycles.
 	_, ok := p.seen[node]
 	if ok {
-		builder.WriteString("... WARNING: Cycle detected!")
-
-		p.lines = append(p.lines, builder.String())
+		p.lines.AddString("... WARNING: Cycle detected!")
+		p.lines.Accept()
 
 		return nil, nil
 	}
 
-	builder.WriteString(node.String())
-	p.lines = append(p.lines, builder.String())
+	p.lines.Accept()
+
 	p.seen[node] = true
 
 	var indent strings.Builder
@@ -92,6 +93,8 @@ func (p *AstPrinter) Apply(node TreeNoder) ([]TravData, error) {
 		td := TravData{
 			Node: value,
 			Data: &AstPrinter{
+				lines:      p.lines,
+				seen:       p.seen,
 				indent:     indent.String(),
 				same_level: false,
 				is_last:    false,
@@ -129,17 +132,9 @@ func (p *AstPrinter) Apply(node TreeNoder) ([]TravData, error) {
 	return children, nil
 }
 
-// Copy creates a copy of the Printer. This method returns the Printer itself.
-//
-// Returns:
-//   - *Printer: The copy.
-func (p *AstPrinter) Copy() Traverser {
-	return p
-}
-
 // String implements the fmt.Stringer interface.
 //
 // Returns the printed tree as a string with newlines.
 func (p *AstPrinter) String() string {
-	return strings.Join(p.lines, "\n")
+	return p.lines.String()
 }

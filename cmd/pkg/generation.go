@@ -190,7 +190,7 @@ func (iter *{{ .ReverseIteratorSig }}) Apply(fn iterator.IteratorFunc) error {
 }
 
 // Restart implements the {{ .IteratorIntf }} interface.
-func (iter *{{ .ReverseIteratorSig }}) Restart() {
+func (iter *{{ .ReverseIteratorSig }}) Reset() {
 	iter.current = iter.last
 }
 

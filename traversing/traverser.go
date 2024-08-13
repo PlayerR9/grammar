@@ -12,12 +12,6 @@ type Traverser interface {
 	// Reset resets the traverser. Used for initialization.
 	Reset()
 
-	// Copy returns a copy of the traverser. Must never return nil.
-	//
-	// Returns:
-	//   - Traverser: The copy.
-	Copy() Traverser
-
 	// Apply applies the traverser on the node.
 	//
 	// Parameters:
