@@ -206,7 +206,7 @@ type {{ .NodeName }}{{ .Generics }} struct {
 }
 
 // IsLeaf implements the {{ .Noder }} interface.
-func (tn *{{ .NodeSig }}) IsLeaf() bool {
+func (tn {{ .NodeSig }}) IsLeaf() bool {
 	return tn.FirstChild == nil
 }
 
@@ -297,7 +297,7 @@ func (tn *{{ .NodeSig }}) AddChildren(children []{{ .Noder }}) {
 }
 
 // Iterator implements the {{ .Noder }} interface.
-func (tn *{{ .NodeSig }}) Iterator() iterator.Iterable {
+func (tn {{ .NodeSig }}) Iterator() iterator.Iterable {
 	return &{{ .IteratorSig }}{
 		first:   tn.FirstChild,
 		current: tn.FirstChild,
@@ -305,7 +305,7 @@ func (tn *{{ .NodeSig }}) Iterator() iterator.Iterable {
 }
 
 // ReverseIterator implements the {{ .Noder }} interface.
-func (tn *{{ .NodeSig }}) ReverseIterator() iterator.Iterable {
+func (tn {{ .NodeSig }}) ReverseIterator() iterator.Iterable {
 	return &{{ .ReverseIteratorSig }}{
 		last:    tn.LastChild,
 		current: tn.LastChild,
@@ -313,7 +313,7 @@ func (tn *{{ .NodeSig }}) ReverseIterator() iterator.Iterable {
 }
 
 // String implements the {{ .Noder }} interface.
-func (tn *{{ .NodeSig }}) String() string {
+func (tn {{ .NodeSig }}) String() string {
 	var builder strings.Builder
 
 	builder.WriteString(strconv.Itoa(tn.Pos))
@@ -339,9 +339,9 @@ func (tn *{{ .NodeSig }}) String() string {
 //   - pos: The position of the node in the source code.
 //
 // Returns:
-//   - *{{ .NodeSig }}: A pointer to the newly created node. It is never nil.
-func New{{ .NodeName }}{{ .Generics }}(n_type {{ .TypeName }}, data string, pos int) *{{ .NodeSig }} {
-	return &{{ .NodeSig }}{
+//   - {{ .NodeSig }}: The newly created node.
+func New{{ .NodeName }}{{ .Generics }}(n_type {{ .TypeName }}, data string, pos int) {{ .NodeSig }} {
+	return {{ .NodeSig }}{
 		Type: n_type,
 		Data: data,
 		Pos:  pos,
