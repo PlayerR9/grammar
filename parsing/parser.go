@@ -441,11 +441,11 @@ func (p Parser[S]) display_tokens(width int) {
 func (p Parser[S]) display_data(data []byte, tab_size int) {
 	var at int
 
-	if len(p.tokens) == 0 {
+	if len(p.tokens) < 2 {
 		at = 0
 	} else {
-		last_token := p.tokens[len(p.tokens)-1]
-		at = last_token.At
+		first_token := p.tokens[0]
+		at = first_token.At
 	}
 
 	res := displ.PrintBoxedData(data, at,

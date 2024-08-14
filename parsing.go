@@ -137,7 +137,14 @@ func (p *Parser[T, S]) Parse(data []byte) (T, error) {
 		fmt.Println("Debug option show_tree is enabled, printing forest:")
 
 		for _, tree := range forest {
-			fmt.Println(tree.String())
+			dbg.AssertNotNil(tree, "tree")
+
+			p := &traversing.AstPrinter{}
+
+			err := traversing.Apply(p, tree)
+			dbg.AssertErr(err, "traversing.Apply(p, %s)", tree.String())
+
+			fmt.Println(p.String())
 			fmt.Println()
 		}
 
