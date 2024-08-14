@@ -1,10 +1,21 @@
-package lexing
+package matcher
 
 import (
+	"errors"
+
 	gcers "github.com/PlayerR9/go-commons/errors"
 	gcint "github.com/PlayerR9/go-commons/ints"
 	gcch "github.com/PlayerR9/go-commons/runes"
 )
+
+var (
+	// ErrNoClosestWordFound is an error when no closest word is found.
+	ErrNoClosestWordFound error
+)
+
+func init() {
+	ErrNoClosestWordFound = errors.New("no closest word was found")
+}
 
 // LevenshteinTable is a table of words for the Levenshtein distance.
 type LavenshteinTable struct {
@@ -13,33 +24,6 @@ type LavenshteinTable struct {
 
 	// word_length_list is the list of word lengths.
 	word_length_list []int
-}
-
-// NewLevenshteinTable creates a new Levenshtein table
-// with the given words.
-//
-// Parameters:
-//   - words: The words to add to the table.
-//
-// Returns:
-//   - *LevenshteinTable: The new Levenshtein table.
-//   - error: An error if any of the words cannot be added to the table.
-//
-// Errors:
-//   - *common.ErrAt: Whenever a word is not valid UTF-8.
-//
-// It is the same as creating an empty table and then adding the words to it.
-func NewLevenshteinTable(words ...string) (*LavenshteinTable, error) {
-	lt := &LavenshteinTable{}
-
-	for i, word := range words {
-		err := lt.AddWord(word)
-		if err != nil {
-			return nil, gcint.NewErrAt(i+1, word, err)
-		}
-	}
-
-	return lt, nil
 }
 
 // AddWord adds a word to the table.
@@ -51,6 +35,10 @@ func NewLevenshteinTable(words ...string) (*LavenshteinTable, error) {
 //   - error: An error of type *ErrInvalidUTF8Encoding if the word is not
 //     valid UTF-8.
 func (lt *LavenshteinTable) AddWord(word string) error {
+	if word == "" {
+		return nil
+	}
+
 	chars, err := gcch.StringToUtf8(word)
 	if err != nil {
 		return err
@@ -58,6 +46,28 @@ func (lt *LavenshteinTable) AddWord(word string) error {
 
 	lt.word_list = append(lt.word_list, chars)
 	lt.word_length_list = append(lt.word_length_list, len(chars))
+
+	return nil
+}
+
+// AddWords adds words to the table.
+//
+// Parameters:
+//   - words: The words to add.
+//
+// Returns:
+//   - error: An error of type *ints.ErrAt if the word is not valid UTF-8.
+func (lt *LavenshteinTable) AddWords(words []string) error {
+	for i, word := range words {
+		if word == "" {
+			continue
+		}
+
+		err := lt.AddWord(word)
+		if err != nil {
+			return gcint.NewErrAt(i+1, word, err)
+		}
+	}
 
 	return nil
 }
@@ -78,7 +88,7 @@ func (lt *LavenshteinTable) AddWord(word string) error {
 //   - *ErrNoClosestWordFound: If no closest word is found.
 func (lt LavenshteinTable) Closest(target []rune, limit int) (string, error) {
 	if len(target) == 0 {
-		return "", gcers.NewErrInvalidParameter("target", gcers.NewErrEmpty("slice of runes"))
+		return "", gcers.NewErrInvalidParameter("target", gcers.NewErrEmpty(target))
 	}
 
 	target_len := len(target)
@@ -100,7 +110,7 @@ func (lt LavenshteinTable) Closest(target []rune, limit int) (string, error) {
 	}
 
 	if closest_idx == -1 {
-		return "", NewErrNoClosestWordFound()
+		return "", ErrNoClosestWordFound
 	}
 
 	word := lt.word_list[closest_idx]

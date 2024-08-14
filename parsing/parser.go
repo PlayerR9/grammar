@@ -2,10 +2,12 @@ package parsing
 
 import (
 	"errors"
+	"fmt"
 	"slices"
 
 	dbg "github.com/PlayerR9/go-debug/assert"
 	gr "github.com/PlayerR9/grammar/grammar"
+	"github.com/PlayerR9/grammar/traversing"
 )
 
 // DecisionFunc is the function that returns the decision of the parser.
@@ -35,6 +37,9 @@ type Parser[S gr.TokenTyper] struct {
 
 	// Err is the error reason of the parser.
 	Err *ErrParsing
+
+	// last_action is the last action of the parser.
+	last_action Actioner
 }
 
 // NewParser creates a new parser.
@@ -299,4 +304,146 @@ func (p *Parser[S]) FullParse(tokens []*gr.Token[S]) []*gr.Token[S] {
 	forest := get_forest(p)
 
 	return forest
+}
+
+// FullParseWithSteps is like FullParse but, for each step, it pauses and prints
+// its debug state.
+//
+// Parameters:
+//   - tokens: The input stream of the parser.
+//
+// Returns:
+//   - []*gr.Token[S]: The syntax forest of the input stream.
+func (p *Parser[S]) FullParseWithSteps(tokens []*gr.Token[S]) []*gr.Token[S] {
+	p.SetInputStream(tokens)
+
+	ok := p.Shift() // initial shift
+	if !ok {
+		forest := get_forest(p)
+
+		p.Err = NewErrParsing(0, -1, errors.New("no tokens were specified"))
+
+		return forest
+	}
+
+	p.last_action = NewShiftAction()
+
+	err := p.Step()
+	dbg.AssertErr(err, "parser.Step()")
+
+	for p.Err == nil {
+		top, _ := p.Peek()
+		// luc.AssertOk(ok, "parser.Peek()")
+
+		act, err := p.decision(p, top.Lookahead)
+		if err != nil {
+			p.Err = NewErrParsing(top.At, -1, err)
+			p.Refuse()
+			break
+		}
+
+		p.Refuse()
+
+		p.last_action = act
+
+		err = p.Step()
+		dbg.AssertErr(err, "parser.Step()")
+
+		switch act := act.(type) {
+		case *ShiftAction:
+			_ = p.Shift()
+			// luc.AssertOk(ok, "parser.Shift()")
+		case *ReduceAction[S]:
+			err := apply_reduce(p, act.rule)
+			if err != nil {
+				p.Err = NewErrParsing(top.At, -1, err)
+			}
+		case *AcceptAction[S]:
+			err := apply_reduce(p, act.rule)
+			if err == nil {
+				forest := get_forest(p)
+
+				return forest
+			}
+
+			p.Err = NewErrParsing(top.At, -1, err)
+		default:
+			p.Err = NewErrParsing(top.At, -1, errors.New("invalid action type"))
+		}
+
+		p.last_action = nil
+
+		err = p.Step()
+		dbg.AssertErr(err, "parser.Step()")
+	}
+
+	p.Refuse()
+	forest := get_forest(p)
+
+	err = p.Step()
+	dbg.AssertErr(err, "parser.Step()")
+
+	return forest
+}
+
+// display_stack is a helper function that displays the stack.
+func (p Parser[S]) display_stack() {
+	for _, elem := range p.stack {
+		var printer traversing.AstPrinter
+
+		err := traversing.Apply(&printer, elem)
+		dbg.AssertErr(err, "traversing.Apply(&printer, %s)", elem.String())
+
+		fmt.Println(printer.String())
+		fmt.Println()
+	}
+
+	fmt.Println()
+}
+
+// Step is a function that pauses and prints the current state of the parser.
+//
+// It is useful for debugging.
+//
+// Returns:
+//   - error: Any error that might have occurred. This is used for fatal errors.
+func (p *Parser[S]) Step() error {
+	if p.last_action == nil {
+		fmt.Println("Here's the result of the last action:")
+		fmt.Println()
+
+		p.display_stack()
+	} else {
+		switch act := p.last_action.(type) {
+		case *ShiftAction:
+			if len(p.tokens) == 0 {
+				return errors.New("no tokens left to shift")
+			}
+
+			first := p.tokens[0]
+
+			fmt.Printf("Shifting: %s...\n", first.String())
+		case *ReduceAction[S]:
+			if act.rule == nil {
+				return errors.New("no rule to reduce")
+			}
+
+			fmt.Printf("Reducing: %s...\n", act.rule.String())
+		case *AcceptAction[S]:
+			if act.rule == nil {
+				return errors.New("no rule to accept")
+			}
+
+			fmt.Printf("Accepting: %s...\n", act.rule.String())
+		default:
+			return fmt.Errorf("invalid action type: %T", act)
+		}
+	}
+
+	fmt.Println()
+
+	fmt.Println("Press ENTER to continue...")
+	fmt.Scanln()
+
+	return nil
 }

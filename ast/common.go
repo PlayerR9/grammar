@@ -70,44 +70,6 @@ func LeftRecursive[N Noder, T gr.TokenTyper](root *gr.Token[T], lhs_type T, f Le
 	return nodes, nil
 }
 
-// ToAstFunc is a function that parses the AST.
-//
-// Parameters:
-//   - root: The root of the AST.
-//
-// Returns:
-//   - []*Node[N]: The AST.
-//   - error: An error if the AST could not be parsed.
-type ToAstFunc[N Noder, T gr.TokenTyper] func(root *gr.Token[T]) ([]N, error)
-
-// ToAst parses the AST.
-//
-// Parameters:
-//   - root: The root of the AST.
-//   - to_ast: The function that parses the AST.
-//
-// Returns:
-//   - []N: The AST.
-//   - error: An error if the AST could not be parsed.
-//
-// Errors:
-//   - *common.ErrInvalidParameter: If the root is nil or the to_ast is nil.
-//   - error: Any error returned by the to_ast function.
-func ToAst[N Noder, T gr.TokenTyper](root *gr.Token[T], to_ast ToAstFunc[N, T]) ([]N, error) {
-	if root == nil {
-		return nil, gcers.NewErrNilParameter("root")
-	} else if to_ast == nil {
-		return nil, gcers.NewErrNilParameter("to_ast")
-	}
-
-	nodes, err := to_ast(root)
-	if err != nil {
-		return nodes, err
-	}
-
-	return nodes, nil
-}
-
 // ExtractData extracts the data from a token.
 //
 // Parameters:
@@ -148,4 +110,22 @@ func ExtractChildren[T gr.TokenTyper](node *gr.Token[T]) ([]*gr.Token[T], error)
 	}
 
 	return children, nil
+}
+
+// CheckTokenType checks if the token is of the expected type.
+//
+// Parameters:
+//   - tk: The token to check.
+//   - tk_type: The expected type of the token.
+//
+// Returns:
+//   - error: An error of type *ErrInvalidType if the token is not of the expected type.
+func CheckTokenType[T gr.TokenTyper](tk *gr.Token[T], tk_type T) error {
+	if tk == nil {
+		return NewErrInvalidType(tk_type, nil)
+	} else if tk.Type != tk_type {
+		return NewErrInvalidType(tk_type, &tk.Type)
+	}
+
+	return nil
 }

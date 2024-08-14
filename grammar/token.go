@@ -5,8 +5,61 @@ import (
 	"strings"
 	"unicode/utf8"
 
+	itr "github.com/PlayerR9/go-commons/iterator"
 	gcslc "github.com/PlayerR9/go-commons/slices"
 )
+
+// TokenIterator is a pull-based iterator that iterates over the children of a Node.
+type TokenIterator[T TokenTyper] struct {
+	first, current *Token[T]
+}
+
+// Consume implements the ast.Iterater interface.
+func (iter *TokenIterator[T]) Apply(fn itr.IteratorFunc) error {
+	if iter.current == nil {
+		return itr.ErrExausted
+	}
+
+	err := fn(iter.current)
+	if err != nil {
+		return err
+	}
+
+	iter.current = iter.current.NextSibling
+
+	return nil
+}
+
+// Restart implements the ast.Iterater interface.
+func (iter *TokenIterator[T]) Reset() {
+	iter.current = iter.first
+}
+
+// TokenReverseIterator is a pull-based iterator that iterates over the children of a Node in reverse order.
+type TokenReverseIterator[T TokenTyper] struct {
+	last, current *Token[T]
+}
+
+// Consume implements the Iterater interface.
+func (iter *TokenReverseIterator[T]) Apply(fn itr.IteratorFunc) error {
+	if iter.current == nil {
+		return itr.ErrExausted
+	}
+
+	err := fn(iter.current)
+	if err != nil {
+		return err
+	}
+
+	iter.current = iter.current.PrevSibling
+
+	return nil
+}
+
+// Restart implements the ast.Iterater interface.
+func (iter *TokenReverseIterator[T]) Reset() {
+	iter.current = iter.last
+}
 
 // Token is a node in a tree.
 type Token[S TokenTyper] struct {
@@ -19,7 +72,7 @@ type Token[S TokenTyper] struct {
 }
 
 // String implements the fmt.Stringer interface.
-func (tk *Token[S]) String() string {
+func (tk Token[S]) String() string {
 	var builder strings.Builder
 
 	builder.WriteString("Token[")
@@ -43,7 +96,7 @@ func (tk *Token[S]) String() string {
 //
 // Returns:
 //   - int: The number of runes in the token's data.
-func (t *Token[S]) Size() int {
+func (t Token[S]) Size() int {
 	if t.Data != "" {
 		return utf8.RuneCountInString(t.Data)
 	}
@@ -61,8 +114,32 @@ func (t *Token[S]) Size() int {
 //
 // Returns:
 //   - TokenTyper: The type of the token.
-func (t *Token[S]) GetType() S {
+func (t Token[S]) GetType() S {
 	return t.Type
+}
+
+// IsLeaf checks if the token is a leaf.
+//
+// Returns:
+//   - bool: True if the token is a leaf, false otherwise.
+func (t Token[S]) IsLeaf() bool {
+	return t.FirstChild == nil
+}
+
+// Iterator implements the ast.Noder interface.
+func (t Token[S]) Iterator() itr.Iterable {
+	return &TokenIterator[S]{
+		first:   t.FirstChild,
+		current: t.FirstChild,
+	}
+}
+
+// ReverseIterator implements the ast.Noder interface.
+func (t Token[S]) ReverseIterator() itr.Iterable {
+	return &TokenReverseIterator[S]{
+		last:    t.LastChild,
+		current: t.LastChild,
+	}
 }
 
 // NewToken creates a new node with the given data.

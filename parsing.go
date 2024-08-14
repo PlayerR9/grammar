@@ -34,6 +34,9 @@ const (
 
 	// ShowAll shows all debug information.
 	ShowAll DebugSetting = ShowLex | ShowTree | ShowAst | ShowData
+
+	// ShowParsing runs the parser step by step.
+	ShowParsing DebugSetting = 16
 )
 
 // Parser is the parser of the grammar.
@@ -45,7 +48,7 @@ type Parser[T ast.Noder, S grammar.TokenTyper] struct {
 	parser *parsing.Parser[S]
 
 	// builder is the ast builder.
-	builder *ast.Make[T, S]
+	builder ast.Make[T, S]
 
 	// debug is the debug setting.
 	debug DebugSetting
@@ -65,8 +68,8 @@ type Parser[T ast.Noder, S grammar.TokenTyper] struct {
 //   - *Parser: The new parser.
 //
 // This function returns nil iff any of the parameters is nil.
-func NewParser[T ast.Noder, S grammar.TokenTyper](l *lexing.Lexer[S], p *parsing.Parser[S], b *ast.Make[T, S]) *Parser[T, S] {
-	if l == nil || p == nil || b == nil {
+func NewParser[T ast.Noder, S grammar.TokenTyper](l *lexing.Lexer[S], p *parsing.Parser[S], b ast.Make[T, S]) *Parser[T, S] {
+	if l == nil || p == nil {
 		return nil
 	}
 
@@ -108,7 +111,7 @@ func (p *Parser[T, S]) Parse(data []byte) (T, error) {
 		fmt.Println()
 	}
 
-	tokens := p.lexer.FullLex(p.data)
+	tokens, err := p.lexer.FullLex(p.data)
 
 	if p.debug&ShowLex != 0 {
 		fmt.Println("Debug option show_lex is enabled, printing tokens:")
@@ -118,11 +121,17 @@ func (p *Parser[T, S]) Parse(data []byte) (T, error) {
 		fmt.Println()
 	}
 
-	if p.lexer.Err != nil {
-		return *new(T), p.lexer.Err
+	if err != nil {
+		return *new(T), err
 	}
 
-	forest := p.parser.FullParse(tokens)
+	var forest []*grammar.Token[S]
+
+	if p.debug&ShowParsing != 0 {
+		forest = p.parser.FullParseWithSteps(tokens)
+	} else {
+		forest = p.parser.FullParse(tokens)
+	}
 
 	if p.debug&ShowTree != 0 {
 		fmt.Println("Debug option show_tree is enabled, printing forest:")
