@@ -135,3 +135,113 @@ func SliceOfRunes(values []rune) []string {
 
 	return elems
 }
+
+const (
+	// Ellipsis is an ellipsis string.
+	Ellipsis string = "..."
+
+	// EllipsisLen is the length of the ellipsis string.
+	EllipsisLen int = len(Ellipsis)
+)
+
+// AdaptToScreenWidth is a function that adapts a slice of strings to a
+// specified screen width.
+//
+// Parameters:
+//   - elems: The slice of strings to adapt.
+//   - width: The screen width to adapt to.
+//   - sep: The separator string to use.
+//
+// Returns:
+//   - string: The adapted string.
+//   - int: The number of elements that were not adapted.
+func AdaptToScreenWidth(elems []string, width int, sep string) (string, int) {
+	if width <= 0 || len(elems) == 0 {
+		return "", len(elems)
+	}
+
+	if len(elems) == 1 {
+		if len(elems[0]) <= width {
+			return elems[0], 0
+		}
+
+		return "", 1
+	}
+
+	var res_string string
+	cut := len(elems)
+
+	sizes := make([]int, 0, len(elems))
+
+	for i := 0; i < len(elems); i++ {
+		sizes = append(sizes, len(elems[i]))
+	}
+
+	if sep == "" {
+		total := EllipsisLen
+
+		var idx int
+
+		for idx < len(sizes) && sizes[idx]+total+sizes[len(sizes)-1] <= width {
+			total += sizes[idx]
+			idx++
+		}
+
+		if idx == 0 {
+			right_idx := len(elems) - 1
+
+			for right_idx >= 0 && sizes[right_idx]+total <= width {
+				total += sizes[right_idx]
+				right_idx--
+			}
+
+			if right_idx == len(elems)-1 {
+				return "", len(elems)
+			}
+
+			elems = append([]string{Ellipsis}, elems[:right_idx+1]...)
+
+			res_string = strings.Join(elems, "")
+		} else if idx == len(sizes) {
+			res_string = strings.Join(elems, "")
+		} else {
+			elems = append(elems[:idx], Ellipsis, elems[len(elems)-1])
+			res_string = strings.Join(elems, "")
+		}
+	} else {
+		sep_len := len(sep)
+
+		total := EllipsisLen + sep_len
+
+		var idx int
+
+		for idx < len(sizes) && sizes[idx]+total+sizes[len(sizes)-1]+sep_len <= width {
+			total += sizes[idx]
+			idx++
+		}
+
+		if idx == 0 {
+			right_idx := len(elems) - 1
+
+			for right_idx >= 0 && sizes[right_idx]+total+sep_len <= width {
+				total += sizes[right_idx]
+				right_idx--
+			}
+
+			if right_idx == len(elems)-1 {
+				return "", len(elems)
+			}
+
+			elems = append([]string{Ellipsis}, elems[:right_idx+1]...)
+
+			res_string = strings.Join(elems, sep)
+		} else if idx == len(sizes) {
+			res_string = strings.Join(elems, sep)
+		} else {
+			elems = append(elems[:idx], Ellipsis, elems[len(elems)-1])
+			res_string = strings.Join(elems, sep)
+		}
+	}
+
+	return res_string, cut - len(elems) + 1
+}

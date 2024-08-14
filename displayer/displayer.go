@@ -1,4 +1,4 @@
-package grammar
+package displayer
 
 import (
 	"bytes"
@@ -24,57 +24,19 @@ func init() {
 	BoxStyle = gfch.NewBoxStyle(gfch.BtNormal, true, [4]int{1, 2, 1, 2})
 }
 
-type PrintOption func(s *PrintSettings)
-
-func WithLimitPrevLines(prev_lines int) PrintOption {
-	if prev_lines < 0 {
-		prev_lines = -1
-	}
-
-	return func(s *PrintSettings) {
-		s.prev_lines = prev_lines
-	}
-}
-
-func WithLimitNextLines(next_lines int) PrintOption {
-	if next_lines < 0 {
-		next_lines = -1
-	}
-
-	return func(s *PrintSettings) {
-		s.next_lines = next_lines
-	}
-}
-
-func WithDelta(delta int) PrintOption {
-	if delta < 0 {
-		delta = -1
-	} else if delta == 0 {
-		delta = 1
-	}
-
-	return func(s *PrintSettings) {
-		s.delta = delta
-	}
-}
-
-func WithFixedTabSize(tab_size int) PrintOption {
-	if tab_size < 0 {
-		tab_size = -1
-	} else if tab_size == 0 {
-		tab_size = 3
-	}
-
-	return func(s *PrintSettings) {
-		s.tab_size = tab_size
-	}
-}
-
+// PrintSettings is the settings of the printer.
 type PrintSettings struct {
+	// prev_lines is the number of previous lines.
 	prev_lines int
+
+	// next_lines is the number of next lines.
 	next_lines int
-	delta      int
-	tab_size   int
+
+	// delta is the delta.
+	delta int
+
+	// tab_size is the tab size.
+	tab_size int
 }
 
 // make_arrow is a helper function that creates an arrow pointing to the faulty token.
@@ -233,41 +195,6 @@ func PrintSyntaxError(data []byte, start_pos int, opts ...PrintOption) []byte {
 	return buffer.Bytes()
 }
 
-// DetermineCoords is a helper function that determines the coordinates of the given position.
-//
-// Parameters:
-//   - data: The data read from the input stream.
-//   - pos: The position of the faulty token.
-//
-// Returns:
-//   - int: The x coordinate of the faulty token.
-//   - int: The y coordinate of the faulty token.
-func DetermineCoords(data []byte, pos int) (int, int) {
-	if len(data) == 0 {
-		return 0, 0
-	}
-
-	if pos < 0 {
-		pos = len(data) + pos
-	} else if pos >= len(data) {
-		pos = len(data) - 1
-	}
-
-	var x int
-	var y int
-
-	for i := 0; i < pos; i++ {
-		if data[i] == '\n' {
-			x = 0
-			y++
-		} else {
-			x++
-		}
-	}
-
-	return x, y
-}
-
 // DisplayError is a helper function that displays the error.
 //
 // Parameters:
@@ -286,7 +213,7 @@ func DisplayError(data []byte, err error, opts ...PrintOption) string {
 
 	switch reason := err.(type) {
 	case *lexing.ErrLexing:
-		x, y := DetermineCoords(data, reason.StartPos)
+		x, y := utby.DetermineCoords(data, reason.StartPos)
 
 		builder.WriteString("Lexing error at the ")
 		builder.WriteString(gcint.GetOrdinalSuffix(x + 1))
@@ -304,14 +231,10 @@ func DisplayError(data []byte, err error, opts ...PrintOption) string {
 		var table gfch.RuneTable
 
 		err := table.FromBytes(bytes.Split(PrintSyntaxError(data, reason.StartPos, opts...), []byte("\n")))
-		if err != nil {
-			panic(err.Error())
-		}
+		dbg.AssertErr(err, "table.FromBytes(data)")
 
 		err = BoxStyle.Apply(&table)
-		if err != nil {
-			panic(err.Error())
-		}
+		dbg.AssertErr(err, "BoxStyle.Apply(&table)")
 
 		_, _ = builder.Write(table.Byte())
 		builder.WriteRune('\n')
@@ -323,7 +246,7 @@ func DisplayError(data []byte, err error, opts ...PrintOption) string {
 			builder.WriteString(suggestion)
 		}
 	case *parsing.ErrParsing:
-		x, y := DetermineCoords(data, reason.StartPos)
+		x, y := utby.DetermineCoords(data, reason.StartPos)
 
 		builder.WriteString("Parsing error at the ")
 		builder.WriteString(gcint.GetOrdinalSuffix(x))
@@ -341,14 +264,10 @@ func DisplayError(data []byte, err error, opts ...PrintOption) string {
 		var table gfch.RuneTable
 
 		err := table.FromBytes(bytes.Split(PrintSyntaxError(data, reason.StartPos, opts...), []byte("\n")))
-		if err != nil {
-			panic(err.Error())
-		}
+		dbg.AssertErr(err, "table.FromBytes(data)")
 
 		err = BoxStyle.Apply(&table)
-		if err != nil {
-			panic(err.Error())
-		}
+		dbg.AssertErr(err, "BoxStyle.Apply(&table)")
 
 		_, _ = builder.Write(table.Byte())
 		builder.WriteRune('\n')

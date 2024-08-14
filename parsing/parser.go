@@ -4,10 +4,13 @@ import (
 	"errors"
 	"fmt"
 	"slices"
+	"strings"
 
 	dbg "github.com/PlayerR9/go-debug/assert"
 	gr "github.com/PlayerR9/grammar/grammar"
 	"github.com/PlayerR9/grammar/traversing"
+	utos "github.com/PlayerR9/grammar/util/os"
+	utstr "github.com/PlayerR9/grammar/util/strings"
 )
 
 // DecisionFunc is the function that returns the decision of the parser.
@@ -317,6 +320,9 @@ func (p *Parser[S]) FullParse(tokens []*gr.Token[S]) []*gr.Token[S] {
 func (p *Parser[S]) FullParseWithSteps(tokens []*gr.Token[S]) []*gr.Token[S] {
 	p.SetInputStream(tokens)
 
+	err := p.Step("\t\t**Initial State:**\n")
+	dbg.AssertErr(err, "parser.Step()")
+
 	ok := p.Shift() // initial shift
 	if !ok {
 		forest := get_forest(p)
@@ -328,7 +334,7 @@ func (p *Parser[S]) FullParseWithSteps(tokens []*gr.Token[S]) []*gr.Token[S] {
 
 	p.last_action = NewShiftAction()
 
-	err := p.Step()
+	err = p.Step("\t\t**Initial Shift:**\n")
 	dbg.AssertErr(err, "parser.Step()")
 
 	for p.Err == nil {
@@ -346,7 +352,7 @@ func (p *Parser[S]) FullParseWithSteps(tokens []*gr.Token[S]) []*gr.Token[S] {
 
 		p.last_action = act
 
-		err = p.Step()
+		err = p.Step("\t\t**Decision:**\n")
 		dbg.AssertErr(err, "parser.Step()")
 
 		switch act := act.(type) {
@@ -373,14 +379,14 @@ func (p *Parser[S]) FullParseWithSteps(tokens []*gr.Token[S]) []*gr.Token[S] {
 
 		p.last_action = nil
 
-		err = p.Step()
+		err = p.Step("\t\t**Apply Action:**\n")
 		dbg.AssertErr(err, "parser.Step()")
 	}
 
 	p.Refuse()
 	forest := get_forest(p)
 
-	err = p.Step()
+	err = p.Step("\t\t**Final State:**\n")
 	dbg.AssertErr(err, "parser.Step()")
 
 	return forest
@@ -397,49 +403,95 @@ func (p Parser[S]) display_stack() {
 		fmt.Println(printer.String())
 		fmt.Println()
 	}
+}
 
-	fmt.Println()
+// display_tokens is a helper function that displays the tokens.
+func (p Parser[S]) display_tokens(width int) {
+	elems := make([]string, 0, len(p.tokens)+1)
+	elems = append(elems, "")
+
+	for _, tok := range p.tokens {
+		elems = append(elems, tok.String())
+	}
+
+	var str string
+
+	if width <= 0 {
+		str = strings.Join(elems, " <- ")
+	} else {
+		tmp, n := utstr.AdaptToScreenWidth(elems, width, " <- ")
+		str = tmp
+
+		if n != 0 {
+			str += fmt.Sprintf("\n+ %d more", n)
+		}
+	}
+
+	fmt.Println(str)
+}
+
+func (p Parser[S]) display_data() {
+
 }
 
 // Step is a function that pauses and prints the current state of the parser.
 //
 // It is useful for debugging.
 //
+// Parameters:
+//   - title: The title of the step. This is used for displaying the step title.
+//
 // Returns:
 //   - error: Any error that might have occurred. This is used for fatal errors.
-func (p *Parser[S]) Step() error {
-	if p.last_action == nil {
-		fmt.Println("Here's the result of the last action:")
+func (p *Parser[S]) Step(title string) error {
+	utos.ClearScreen()
+
+	if title != "" {
+		fmt.Println(title)
 		fmt.Println()
-
-		p.display_stack()
-	} else {
-		switch act := p.last_action.(type) {
-		case *ShiftAction:
-			if len(p.tokens) == 0 {
-				return errors.New("no tokens left to shift")
-			}
-
-			first := p.tokens[0]
-
-			fmt.Printf("Shifting: %s...\n", first.String())
-		case *ReduceAction[S]:
-			if act.rule == nil {
-				return errors.New("no rule to reduce")
-			}
-
-			fmt.Printf("Reducing: %s...\n", act.rule.String())
-		case *AcceptAction[S]:
-			if act.rule == nil {
-				return errors.New("no rule to accept")
-			}
-
-			fmt.Printf("Accepting: %s...\n", act.rule.String())
-		default:
-			return fmt.Errorf("invalid action type: %T", act)
-		}
 	}
 
+	if p.last_action == nil {
+		p.display_tokens(3 * 80)
+		p.display_stack()
+
+		fmt.Println()
+
+		fmt.Println("Press ENTER to continue...")
+		fmt.Scanln()
+
+		return nil
+	}
+
+	switch act := p.last_action.(type) {
+	case *ShiftAction:
+		if len(p.tokens) == 0 {
+			return errors.New("no tokens left to shift")
+		}
+
+		first := p.tokens[0]
+
+		fmt.Printf("Shifting: %s...\n", first.String())
+	case *ReduceAction[S]:
+		if act.rule == nil {
+			return errors.New("no rule to reduce")
+		}
+
+		fmt.Printf("Reducing: %q...\n", act.rule.String())
+	case *AcceptAction[S]:
+		if act.rule == nil {
+			return errors.New("no rule to accept")
+		}
+
+		fmt.Printf("Accepting: %q...\n", act.rule.String())
+	default:
+		return fmt.Errorf("invalid action type: %T", act)
+	}
+
+	fmt.Println()
+
+	p.display_tokens(3 * 80)
+	p.display_stack()
 	fmt.Println()
 
 	fmt.Println("Press ENTER to continue...")
