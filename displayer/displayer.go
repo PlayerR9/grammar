@@ -12,8 +12,6 @@ import (
 	gcint "github.com/PlayerR9/go-commons/ints"
 	dbg "github.com/PlayerR9/go-debug/assert"
 	"github.com/PlayerR9/grammar/lexing"
-	"github.com/PlayerR9/grammar/parsing"
-	utby "github.com/PlayerR9/grammar/util/bytes"
 )
 
 var (
@@ -52,7 +50,7 @@ func (s *PrintSettings) make_arrow(faulty_line []byte, start_pos int) ([]byte, e
 
 	buffer.Grow(len(faulty_line))
 
-	first_tab := utby.FixTabSize(s.tab_size, []byte{' '})
+	first_tab := gcby.FixTabSize(s.tab_size, []byte{' '})
 
 	for i := 0; i < start_pos; i++ {
 		if faulty_line[i] == '\t' {
@@ -91,7 +89,7 @@ func (s *PrintSettings) make_arrow(faulty_line []byte, start_pos int) ([]byte, e
 			buffer.WriteRune('^')
 		}
 	} else {
-		second_tab := utby.FixTabSize(s.tab_size, []byte{'~'})
+		second_tab := gcby.FixTabSize(s.tab_size, []byte{'~'})
 
 		for i := start_pos; i < start_pos+s.delta; i++ {
 			if faulty_line[i] != '\t' {
@@ -195,6 +193,27 @@ func PrintSyntaxError(data []byte, start_pos int, opts ...PrintOption) []byte {
 	return buffer.Bytes()
 }
 
+// PrintBoxedData is a helper function that prints the boxed data.
+//
+// Parameters:
+//   - data: The data of the faulty line.
+//   - at: The start position of the faulty token.
+//   - opts: The print options.
+//
+// Returns:
+//   - []byte: The boxed data.
+func PrintBoxedData(data []byte, at int, opts ...PrintOption) []byte {
+	var table gfch.RuneTable
+
+	err := table.FromBytes(bytes.Split(PrintSyntaxError(data, at, opts...), []byte("\n")))
+	dbg.AssertErr(err, "table.FromBytes(data)")
+
+	err = BoxStyle.Apply(&table)
+	dbg.AssertErr(err, "BoxStyle.Apply(&table)")
+
+	return table.Byte()
+}
+
 // DisplayError is a helper function that displays the error.
 //
 // Parameters:
@@ -213,7 +232,7 @@ func DisplayError(data []byte, err error, opts ...PrintOption) string {
 
 	switch reason := err.(type) {
 	case *lexing.ErrLexing:
-		x, y := utby.DetermineCoords(data, reason.StartPos)
+		x, y := gcby.DetermineCoords(data, reason.StartPos)
 
 		builder.WriteString("Lexing error at the ")
 		builder.WriteString(gcint.GetOrdinalSuffix(x + 1))
@@ -228,15 +247,7 @@ func DisplayError(data []byte, err error, opts ...PrintOption) string {
 
 		opts = append(opts, WithDelta(reason.Delta))
 
-		var table gfch.RuneTable
-
-		err := table.FromBytes(bytes.Split(PrintSyntaxError(data, reason.StartPos, opts...), []byte("\n")))
-		dbg.AssertErr(err, "table.FromBytes(data)")
-
-		err = BoxStyle.Apply(&table)
-		dbg.AssertErr(err, "BoxStyle.Apply(&table)")
-
-		_, _ = builder.Write(table.Byte())
+		_, _ = builder.Write(PrintBoxedData(data, reason.StartPos, opts...))
 		builder.WriteRune('\n')
 
 		suggestion := reason.Suggestion
@@ -245,8 +256,8 @@ func DisplayError(data []byte, err error, opts ...PrintOption) string {
 			builder.WriteString("Hint: ")
 			builder.WriteString(suggestion)
 		}
-	case *parsing.ErrParsing:
-		x, y := utby.DetermineCoords(data, reason.StartPos)
+	case *ErrParsing:
+		x, y := gcby.DetermineCoords(data, reason.StartPos)
 
 		builder.WriteString("Parsing error at the ")
 		builder.WriteString(gcint.GetOrdinalSuffix(x))
@@ -261,15 +272,7 @@ func DisplayError(data []byte, err error, opts ...PrintOption) string {
 
 		opts = append(opts, WithDelta(reason.Delta))
 
-		var table gfch.RuneTable
-
-		err := table.FromBytes(bytes.Split(PrintSyntaxError(data, reason.StartPos, opts...), []byte("\n")))
-		dbg.AssertErr(err, "table.FromBytes(data)")
-
-		err = BoxStyle.Apply(&table)
-		dbg.AssertErr(err, "BoxStyle.Apply(&table)")
-
-		_, _ = builder.Write(table.Byte())
+		_, _ = builder.Write(PrintBoxedData(data, reason.StartPos, opts...))
 		builder.WriteRune('\n')
 
 		suggestion := reason.Suggestion

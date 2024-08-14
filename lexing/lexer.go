@@ -4,10 +4,10 @@ import (
 	"io"
 	"unicode/utf8"
 
+	gccdm "github.com/PlayerR9/go-commons/CustomData/matcher"
 	gcch "github.com/PlayerR9/go-commons/runes"
 	gcstr "github.com/PlayerR9/go-commons/strings"
 	gr "github.com/PlayerR9/grammar/grammar"
-	utmc "github.com/PlayerR9/grammar/util/matcher"
 )
 
 // LexOneFunc is the function that lexes the next token of the lexer.
@@ -37,10 +37,10 @@ type Lexer[S gr.TokenTyper] struct {
 	Err *ErrLexing
 
 	// matcher is the matcher of the lexer.
-	matcher utmc.Matcher[S]
+	matcher gccdm.Matcher[S]
 
 	// table is the lavenshtein table of the lexer.
-	table utmc.LavenshteinTable
+	table gccdm.LavenshteinTable
 
 	// skipped is the number of skipped characters.
 	skipped int
@@ -56,12 +56,12 @@ type Lexer[S gr.TokenTyper] struct {
 //   - *Lexer: The new lexer.
 //
 // It returns nil if the lex_one_func is nil.
-func NewLexer[S gr.TokenTyper](lex_one_func LexOneFunc[S], matcher utmc.Matcher[S]) *Lexer[S] {
+func NewLexer[S gr.TokenTyper](lex_one_func LexOneFunc[S], matcher gccdm.Matcher[S]) *Lexer[S] {
 	if lex_one_func == nil {
 		return nil
 	}
 
-	var table utmc.LavenshteinTable
+	var table gccdm.LavenshteinTable
 
 	table.AddWords(matcher.GetWords())
 

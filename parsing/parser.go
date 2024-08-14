@@ -6,11 +6,12 @@ import (
 	"slices"
 	"strings"
 
+	gcos "github.com/PlayerR9/go-commons/os"
+	gcstr "github.com/PlayerR9/go-commons/strings"
 	dbg "github.com/PlayerR9/go-debug/assert"
+	displ "github.com/PlayerR9/grammar/displayer"
 	gr "github.com/PlayerR9/grammar/grammar"
 	"github.com/PlayerR9/grammar/traversing"
-	utos "github.com/PlayerR9/grammar/util/os"
-	utstr "github.com/PlayerR9/grammar/util/strings"
 )
 
 // DecisionFunc is the function that returns the decision of the parser.
@@ -39,7 +40,7 @@ type Parser[S gr.TokenTyper] struct {
 	decision DecisionFunc[S]
 
 	// Err is the error reason of the parser.
-	Err *ErrParsing
+	Err *displ.ErrParsing
 
 	// last_action is the last action of the parser.
 	last_action Actioner
@@ -262,7 +263,7 @@ func (p *Parser[S]) FullParse(tokens []*gr.Token[S]) []*gr.Token[S] {
 	if !ok {
 		forest := get_forest(p)
 
-		p.Err = NewErrParsing(0, -1, errors.New("no tokens were specified"))
+		p.Err = displ.NewErrParsing(0, -1, errors.New("no tokens were specified"))
 
 		return forest
 	}
@@ -273,7 +274,7 @@ func (p *Parser[S]) FullParse(tokens []*gr.Token[S]) []*gr.Token[S] {
 
 		act, err := p.decision(p, top.Lookahead)
 		if err != nil {
-			p.Err = NewErrParsing(top.At, -1, err)
+			p.Err = displ.NewErrParsing(top.At, -1, err)
 			p.Refuse()
 			break
 		}
@@ -287,7 +288,7 @@ func (p *Parser[S]) FullParse(tokens []*gr.Token[S]) []*gr.Token[S] {
 		case *ReduceAction[S]:
 			err := apply_reduce(p, act.rule)
 			if err != nil {
-				p.Err = NewErrParsing(top.At, -1, err)
+				p.Err = displ.NewErrParsing(top.At, -1, err)
 			}
 		case *AcceptAction[S]:
 			err := apply_reduce(p, act.rule)
@@ -297,9 +298,9 @@ func (p *Parser[S]) FullParse(tokens []*gr.Token[S]) []*gr.Token[S] {
 				return forest
 			}
 
-			p.Err = NewErrParsing(top.At, -1, err)
+			p.Err = displ.NewErrParsing(top.At, -1, err)
 		default:
-			p.Err = NewErrParsing(top.At, -1, errors.New("invalid action type"))
+			p.Err = displ.NewErrParsing(top.At, -1, errors.New("invalid action type"))
 		}
 	}
 
@@ -317,24 +318,24 @@ func (p *Parser[S]) FullParse(tokens []*gr.Token[S]) []*gr.Token[S] {
 //
 // Returns:
 //   - []*gr.Token[S]: The syntax forest of the input stream.
-func (p *Parser[S]) FullParseWithSteps(tokens []*gr.Token[S]) []*gr.Token[S] {
+func (p *Parser[S]) FullParseWithSteps(tokens []*gr.Token[S], data []byte, tab_size int) []*gr.Token[S] {
 	p.SetInputStream(tokens)
 
-	err := p.Step("\t\t**Initial State:**\n")
+	err := p.Step("\t\t**Initial State:**\n", data, tab_size)
 	dbg.AssertErr(err, "parser.Step()")
 
 	ok := p.Shift() // initial shift
 	if !ok {
 		forest := get_forest(p)
 
-		p.Err = NewErrParsing(0, -1, errors.New("no tokens were specified"))
+		p.Err = displ.NewErrParsing(0, -1, errors.New("no tokens were specified"))
 
 		return forest
 	}
 
 	p.last_action = NewShiftAction()
 
-	err = p.Step("\t\t**Initial Shift:**\n")
+	err = p.Step("\t\t**Initial Shift:**\n", data, tab_size)
 	dbg.AssertErr(err, "parser.Step()")
 
 	for p.Err == nil {
@@ -343,7 +344,7 @@ func (p *Parser[S]) FullParseWithSteps(tokens []*gr.Token[S]) []*gr.Token[S] {
 
 		act, err := p.decision(p, top.Lookahead)
 		if err != nil {
-			p.Err = NewErrParsing(top.At, -1, err)
+			p.Err = displ.NewErrParsing(top.At, -1, err)
 			p.Refuse()
 			break
 		}
@@ -352,7 +353,7 @@ func (p *Parser[S]) FullParseWithSteps(tokens []*gr.Token[S]) []*gr.Token[S] {
 
 		p.last_action = act
 
-		err = p.Step("\t\t**Decision:**\n")
+		err = p.Step("\t\t**Decision:**\n", data, tab_size)
 		dbg.AssertErr(err, "parser.Step()")
 
 		switch act := act.(type) {
@@ -362,7 +363,7 @@ func (p *Parser[S]) FullParseWithSteps(tokens []*gr.Token[S]) []*gr.Token[S] {
 		case *ReduceAction[S]:
 			err := apply_reduce(p, act.rule)
 			if err != nil {
-				p.Err = NewErrParsing(top.At, -1, err)
+				p.Err = displ.NewErrParsing(top.At, -1, err)
 			}
 		case *AcceptAction[S]:
 			err := apply_reduce(p, act.rule)
@@ -372,21 +373,21 @@ func (p *Parser[S]) FullParseWithSteps(tokens []*gr.Token[S]) []*gr.Token[S] {
 				return forest
 			}
 
-			p.Err = NewErrParsing(top.At, -1, err)
+			p.Err = displ.NewErrParsing(top.At, -1, err)
 		default:
-			p.Err = NewErrParsing(top.At, -1, errors.New("invalid action type"))
+			p.Err = displ.NewErrParsing(top.At, -1, errors.New("invalid action type"))
 		}
 
 		p.last_action = nil
 
-		err = p.Step("\t\t**Apply Action:**\n")
+		err = p.Step("\t\t**Apply Action:**\n", data, tab_size)
 		dbg.AssertErr(err, "parser.Step()")
 	}
 
 	p.Refuse()
 	forest := get_forest(p)
 
-	err = p.Step("\t\t**Final State:**\n")
+	err = p.Step("\t\t**Final State:**\n", data, tab_size)
 	dbg.AssertErr(err, "parser.Step()")
 
 	return forest
@@ -419,7 +420,7 @@ func (p Parser[S]) display_tokens(width int) {
 	if width <= 0 {
 		str = strings.Join(elems, " <- ")
 	} else {
-		tmp, n := utstr.AdaptToScreenWidth(elems, width, " <- ")
+		tmp, n := gcstr.AdaptToScreenWidth(elems, width, " <- ")
 		str = tmp
 
 		if n != 0 {
@@ -430,8 +431,31 @@ func (p Parser[S]) display_tokens(width int) {
 	fmt.Println(str)
 }
 
-func (p Parser[S]) display_data() {
+// display_data is a helper function that displays the data.
+//
+// It is useful for debugging.
+//
+// Parameters:
+//   - data: The data to display.
+//   - tab_size: The size of the tab.
+func (p Parser[S]) display_data(data []byte, tab_size int) {
+	var at int
 
+	if len(p.tokens) == 0 {
+		at = 0
+	} else {
+		last_token := p.tokens[len(p.tokens)-1]
+		at = last_token.At
+	}
+
+	res := displ.PrintBoxedData(data, at,
+		displ.WithDelta(1),
+		displ.WithLimitNextLines(1),
+		displ.WithLimitPrevLines(1),
+		displ.WithFixedTabSize(tab_size),
+	)
+
+	fmt.Println(string(res))
 }
 
 // Step is a function that pauses and prints the current state of the parser.
@@ -443,10 +467,14 @@ func (p Parser[S]) display_data() {
 //
 // Returns:
 //   - error: Any error that might have occurred. This is used for fatal errors.
-func (p *Parser[S]) Step(title string) error {
-	utos.ClearScreen()
+func (p *Parser[S]) Step(title string, data []byte, tab_size int) error {
+	gcos.ClearScreen()
+
+	p.display_data(data, tab_size)
+	fmt.Println()
 
 	if title != "" {
+		fmt.Println()
 		fmt.Println(title)
 		fmt.Println()
 	}

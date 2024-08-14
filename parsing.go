@@ -128,7 +128,7 @@ func (p *Parser[T, S]) Parse(data []byte) (T, error) {
 	var forest []*grammar.Token[S]
 
 	if p.debug&ShowParsing != 0 {
-		forest = p.parser.FullParseWithSteps(tokens)
+		forest = p.parser.FullParseWithSteps(tokens, data, 3)
 	} else {
 		forest = p.parser.FullParse(tokens)
 	}
