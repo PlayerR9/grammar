@@ -2,8 +2,6 @@ package ast
 
 import (
 	"fmt"
-
-	tr "github.com/PlayerR9/grammar/traversing"
 )
 
 // NodeTyper is an interface that defines the behavior of a node type.
@@ -11,21 +9,6 @@ type NodeTyper interface {
 	~int
 
 	fmt.Stringer
-}
-
-// Iterater is an interface that defines the behavior of an iterator.
-type Iterater interface {
-	// Consume is a method that consumes the next node in the iterator.
-	//
-	// Returns:
-	//   - Noder: The next node in the iterator.
-	//   - error: An error of type io.EOF if there are no more nodes in the iterator.
-	//
-	// The returned node is never nil; unless an error is returned.
-	Consume() (Noder, error)
-
-	// Restart is a method that restarts the iterator.
-	Restart()
 }
 
 // Noder is an interface that defines the behavior of a node.
@@ -45,5 +28,15 @@ type Noder interface {
 	//   - children: The children to add.
 	AddChildren(children []Noder)
 
-	tr.TreeNoder
+	// IsLeaf is a method that checks if the node is a leaf.
+	//
+	// Returns:
+	//   - bool: True if the node is a leaf, false otherwise.
+	IsLeaf() bool
+
+	// String is a method that returns a string representation of the node.
+	//
+	// Returns:
+	//   - string: The string representation of the node.
+	String() string
 }

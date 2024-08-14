@@ -1,12 +1,18 @@
-package traversing
+package ast
 
 import (
+	"iter"
 	"strings"
 
-	itr "github.com/PlayerR9/go-commons/iterator"
 	gcstr "github.com/PlayerR9/go-commons/strings"
 	dbg "github.com/PlayerR9/go-debug/assert"
 )
+
+type Traversable interface {
+	DirectChild() iter.Seq[Traversable]
+	BackwardChild() iter.Seq[Traversable]
+	Noder
+}
 
 // AstPrinter is a tree printer.
 type AstPrinter struct {
@@ -14,7 +20,7 @@ type AstPrinter struct {
 	lines *gcstr.LineBuffer
 
 	// seen is the list of seen nodes.
-	seen map[TreeNoder]bool
+	seen map[Traversable]bool
 
 	// same_level is true if the node is on the same level.
 	same_level bool
@@ -42,14 +48,18 @@ func (p *AstPrinter) Reset() {
 		}
 	}
 
-	p.seen = make(map[TreeNoder]bool)
+	p.seen = make(map[Traversable]bool)
 	p.indent = ""
 	p.same_level = false
 	p.is_last = true
 }
 
 // Apply implements the Traverser interface.
-func (p *AstPrinter) Apply(node TreeNoder) ([]TravData, error) {
+func (p *AstPrinter) Apply(node Traversable) ([]TravData, error) {
+	if node == nil {
+		return nil, nil
+	}
+
 	dbg.AssertNotNil(p, "info")
 
 	if p.indent != "" {
@@ -93,11 +103,9 @@ func (p *AstPrinter) Apply(node TreeNoder) ([]TravData, error) {
 
 	var children []TravData
 
-	fn := func(elem any) error {
-		value := dbg.AssertConv[TreeNoder](elem, "elem")
-
+	for c := range node.DirectChild() {
 		td := TravData{
-			Node: value,
+			Node: c,
 			Data: &AstPrinter{
 				lines:      p.lines,
 				seen:       p.seen,
@@ -108,13 +116,6 @@ func (p *AstPrinter) Apply(node TreeNoder) ([]TravData, error) {
 		}
 
 		children = append(children, td)
-
-		return nil
-	}
-
-	err := itr.Iterate(node.Iterator(), fn)
-	if err != nil {
-		return nil, err
 	}
 
 	if len(children) == 0 {

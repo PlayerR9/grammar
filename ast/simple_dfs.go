@@ -1,8 +1,7 @@
-package traversing
+package ast
 
 import (
-	itr "github.com/PlayerR9/go-commons/iterator"
-	dbg "github.com/PlayerR9/go-debug/assert"
+	"iter"
 )
 
 // SimpleDFSDoFunc is a function that is called for each node.
@@ -12,10 +11,10 @@ import (
 //
 // Returns:
 //   - error: An error if the DFS could not be applied.
-type SimpleDFSDoFunc[N TreeNoder] func(node N) error
+type SimpleDFSDoFunc[N interface{ BackwardChild() iter.Seq[N] }] func(node N) error
 
 // SimpleDFS is a simple depth-first search.
-type SimpleDFS[N TreeNoder] struct {
+type SimpleDFS[N interface{ BackwardChild() iter.Seq[N] }] struct {
 	// do_func is the function that is called for each node.
 	do_func SimpleDFSDoFunc[N]
 }
@@ -29,7 +28,7 @@ type SimpleDFS[N TreeNoder] struct {
 //   - SimpleDFS[N]: The new SimpleDFS.
 //
 // If f is nil, simpleDFS is returned as nil.
-func NewSimpleDFS[N TreeNoder](f SimpleDFSDoFunc[N]) SimpleDFS[N] {
+func NewSimpleDFS[N interface{ BackwardChild() iter.Seq[N] }](f SimpleDFSDoFunc[N]) SimpleDFS[N] {
 	if f == nil {
 		return SimpleDFS[N]{}
 	}
@@ -68,21 +67,8 @@ func (s SimpleDFS[N]) Apply(root N) error {
 			return err
 		}
 
-		if top.IsLeaf() {
-			continue
-		}
-
-		fn := func(elem any) error {
-			value := dbg.AssertConv[N](elem, "elem")
-
-			stack = append(stack, value)
-
-			return nil
-		}
-
-		err = itr.Iterate(top.ReverseIterator(), fn)
-		if err != nil {
-			return err
+		for child := range top.BackwardChild() {
+			stack = append(stack, child)
 		}
 	}
 
