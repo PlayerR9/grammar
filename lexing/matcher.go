@@ -1,35 +1,28 @@
 package lexing
 
 import (
-	"errors"
 	"io"
 
 	gcers "github.com/PlayerR9/go-commons/errors"
 )
 
-var (
-	// Done is the error returned when the lexing process is done without error and before reaching the end of the
-	// stream. Readers must return Done itself and not wrap it as callers will test this error using ==.
-	Done error
-)
-
-func init() {
-	Done = errors.New("done")
-}
-
 // LexFunc is a function that can be used with RightLex.
 //
 // Parameters:
-//   - scanner: The rune scanner.
+//   - scanner: The rune scanner. Assumed to never be nil.
 //
 // Returns:
 //   - []rune: The list of runes.
 //   - error: The error.
 //
-// This function must assume scanner is never nil. Moreover, use io.EOF to signify the end of the stream.
-// Lastly, the error Done is returned if the lexing process is done before reaching the end of the stream.
+// Errors:
+//   - NoMatch: When a match is not found, regardless of whether the end of the stream is reached or not.
+//   - io.EOF: When the end of the stream is reached but a match was found.
+//   - any other error that is not NoMatch or io.EOF.
 //
-// Finally, it is suggested to always push back the last rune read if any error that is not io.EOF is returned.
+// Notes: Always push back the last rune read if any error that is not io.EOF is returned. That's because
+// this function always reads the next rune from the stream and, if not properly pushed back, it will
+// skip the next rune.
 type LexFunc func(scanner io.RuneScanner) ([]rune, error)
 
 // RightLex reads the content of the stream and returns the list of runes according to the given function.
@@ -44,7 +37,8 @@ type LexFunc func(scanner io.RuneScanner) ([]rune, error)
 //
 // Errors:
 //   - *errors.ErrInvalidParameter: When scanner or lex_f is nil.
-//   - any other error returned by lex_f.
+//   - NoMatch: When a match is not found, regardless of whether the end of the stream is reached or not.
+//   - any other error that is returned by lex_f that is not io.EOF.
 func RightLex(scanner io.RuneScanner, lex_f LexFunc) ([]rune, error) {
 	if scanner == nil {
 		return nil, gcers.NewErrNilParameter("scanner")
@@ -52,21 +46,34 @@ func RightLex(scanner io.RuneScanner, lex_f LexFunc) ([]rune, error) {
 		return nil, gcers.NewErrNilParameter("lex_f")
 	}
 
-	var chars []rune
-
-	for {
-		curr, err := lex_f(scanner)
-		if err == io.EOF || err == Done {
-			chars = append(chars, curr...)
-
-			break
+	// First match
+	chars, err := lex_f(scanner)
+	if err != nil {
+		if err != io.EOF {
+			return chars, err
 		}
+
+		return chars, nil
+	}
+
+	// Subsequent matches
+	var tmp []rune
+
+	for err == nil {
+		tmp, err = lex_f(scanner)
+		chars = append(chars, tmp...)
 
 		if err != nil {
-			return nil, err
-		}
+			if err == io.EOF || err == NoMatch {
+				return chars, nil
+			}
 
-		chars = append(chars, curr...)
+			return chars, err
+		}
+	}
+
+	if err != io.EOF && err != NoMatch {
+		return chars, err
 	}
 
 	return chars, nil

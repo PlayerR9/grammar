@@ -21,7 +21,7 @@ func TestRightLex(t *testing.T) {
 		if c != '\r' {
 			_ = scanner.UnreadRune()
 
-			return nil, Done
+			return nil, NoMatch
 		}
 
 		c, _, err = scanner.ReadRune()

@@ -253,6 +253,14 @@ func (lexer *Lexer[S]) skip(chars []rune) {
 	}
 }
 
+// AddToMatch is a method that adds a new match to the lexer.
+//
+// Parameters:
+//   - symbol: The symbol of the match.
+//   - word: The word of the match.
+//
+// Returns:
+//   - error: An error if the word cannot be added to the lexer.
 func (lexer *Lexer[S]) AddToMatch(symbol S, word string) error {
 	err := lexer.matcher.AddToMatch(symbol, word)
 	if err != nil {
@@ -262,6 +270,13 @@ func (lexer *Lexer[S]) AddToMatch(symbol S, word string) error {
 	return nil
 }
 
+// AddToSkipRule is a method that adds a new skip rule to the lexer.
+//
+// Parameters:
+//   - words: The words of the skip rule.
+//
+// Returns:
+//   - error: An error if the word cannot be added to the lexer.
 func (lexer *Lexer[S]) AddToSkipRule(words ...string) error {
 	err := lexer.matcher.AddToSkipRule(words...)
 	if err != nil {
