@@ -216,3 +216,18 @@ func (t Token[S]) BackwardChild() iter.Seq[*Token[S]] {
 		}
 	}
 }
+
+// Copy creates a copy of the token.
+//
+// Returns:
+//   - *Token[S]: A copy of the token. It is never nil.
+//
+// However, the lookahead of the copy is not copied.
+func (t Token[S]) Copy() *Token[S] {
+	return &Token[S]{
+		Type:      t.Type,
+		Data:      t.Data,
+		At:        t.At,
+		Lookahead: nil,
+	}
+}

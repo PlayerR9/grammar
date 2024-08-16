@@ -101,15 +101,15 @@ func (p Parser[T, S]) Parse(data []byte) (T, error) {
 		fmt.Println()
 	}
 
-	tokens, err := p.lexer.FullLex(data)
+	lexers, err := p.lexer.FullLex(data)
 
-	if p.debug&ShowLex != 0 {
+	/* if p.debug&ShowLex != 0 {
 		fmt.Println("Debug option show_lex is enabled, printing tokens:")
 		for _, token := range tokens {
 			fmt.Println("\t-", token.String())
 		}
 		fmt.Println()
-	}
+	} */
 
 	if err != nil {
 		return *new(T), err
@@ -117,10 +117,14 @@ func (p Parser[T, S]) Parse(data []byte) (T, error) {
 
 	var forest []*grammar.Token[S]
 
-	if p.debug&ShowParsing != 0 {
-		forest = p.parser.FullParseWithSteps(tokens, data, 3)
-	} else {
-		forest = p.parser.FullParse(tokens)
+	for lexer := range lexers {
+		tokens := lexer.GetTokens()
+
+		if p.debug&ShowParsing != 0 {
+			forest = p.parser.FullParseWithSteps(tokens, data, 3)
+		} else {
+			forest = p.parser.FullParse(tokens)
+		}
 	}
 
 	if p.debug&ShowTree != 0 {

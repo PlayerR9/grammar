@@ -3,11 +3,11 @@ package lexing
 import (
 	"errors"
 	"io"
+	"iter"
 	"unicode/utf8"
 
 	gccdm "github.com/PlayerR9/go-commons/CustomData/matcher"
 	gcch "github.com/PlayerR9/go-commons/runes"
-	gcstr "github.com/PlayerR9/go-commons/strings"
 	dbg "github.com/PlayerR9/go-debug/assert"
 	gr "github.com/PlayerR9/grammar/grammar"
 )
@@ -146,6 +146,39 @@ func (lexer Lexer[S]) get_tokens() []*gr.Token[S] {
 	return tokens
 }
 
+// copy is a private utility function that returns a copy of the lexer.
+//
+// Returns:
+//   - Lexer: A copy of the lexer.
+func (lexer *Lexer[S]) copy() *Lexer[S] {
+	new_tokens := make([]*gr.Token[S], 0, len(lexer.tokens))
+
+	for i := 0; i < len(lexer.tokens); i++ {
+		new_tokens = append(new_tokens, lexer.tokens[i].Copy())
+	}
+
+	var err *ErrLexing
+
+	if lexer.Err != nil {
+		err = &ErrLexing{
+			StartPos:   lexer.Err.StartPos,
+			Delta:      lexer.Err.Delta,
+			Reason:     lexer.Err.Reason,
+			Suggestion: lexer.Err.Suggestion,
+		}
+	}
+
+	return &Lexer[S]{
+		CharStream: lexer.CharStream.Copy(),
+		tokens:     new_tokens,
+		lex_one:    lexer.lex_one,
+		Err:        err,
+		matcher:    lexer.matcher,
+		table:      lexer.table,
+		skipped:    lexer.skipped,
+	}
+}
+
 // FullLex lexes the input stream of the lexer and returns the tokens.
 //
 // Parameters:
@@ -154,93 +187,195 @@ func (lexer Lexer[S]) get_tokens() []*gr.Token[S] {
 // Returns:
 //   - []*gr.Token[S]: The tokens of the lexer that were lexed so far.
 //   - error: An error of type *ErrLexing if the lexing failed.
-func (lexer *Lexer[S]) FullLex(data []byte) ([]*gr.Token[S], error) {
-	lexer.Init(data)
-
-	lexer.Reset()
-
+func (lexer *Lexer[S]) sub_cmp() ([]*Lexer[S], error) {
 	has_matcher := !lexer.matcher.IsEmpty()
 	has_lexer := lexer.lex_one != nil
 
 	if !has_matcher && !has_lexer {
-		return lexer.get_tokens(), errors.New("no lexing function or matcher provided")
+		return nil, errors.New("no lexing function or matcher provided")
 	}
 
 	if has_matcher && has_lexer {
-		for !lexer.IsExhausted() {
-			at := lexer.Pos()
+		at := lexer.Pos()
 
-			match, _ := lexer.matcher.Match(lexer)
+		is_not_critical, err := lexer.matcher.Match(lexer)
+		if err == nil {
+			matches := lexer.matcher.GetMatches()
 
-			if match.IsValidMatch() {
+			next_lexers := make([]*Lexer[S], 0, len(matches))
+
+			for _, match := range matches {
+				new_lexer := lexer.copy()
+
 				if match.IsShouldSkip() {
-					lexer.skip(match.GetChars())
+					new_lexer.skip(match.GetChars())
 				} else {
 					symbol, data := match.GetMatch()
 
 					tk := gr.NewToken(symbol, data, at, nil)
 
-					lexer.tokens = append(lexer.tokens, tk)
-
-					lexer.skipped = 0
-				}
-			} else {
-				tmp, err := lexer.lex_one(lexer)
-				if err != nil {
-					lexer.Err = lexer.make_error(err)
-
-					str, err := lexer.table.Closest(match.GetChars(), 2) // Magic number.
-					if err == nil {
-						lexer.Err.SetSuggestion("Did you mean '" + str + "'?")
-					} else {
-						words := lexer.matcher.GetRuleNames()
-						gcstr.QuoteStrings(words)
-
-						if lexer.matcher.HasSkipped() {
-							words = append(words, "any other skipped character")
-						}
-
-						lexer.Err.SetSuggestion("Did you mean " + gcstr.OrString(words, false) + "?")
-					}
-
-					return lexer.get_tokens(), lexer.Err
+					new_lexer.tokens = append(new_lexer.tokens, tk)
+					new_lexer.skipped = 0
 				}
 
-				if tmp != nil {
-					lexer.tokens = append(lexer.tokens, tmp)
-					lexer.skipped = 0
-				}
-			}
-		}
-	} else if has_matcher {
-		for !lexer.IsExhausted() {
-			tmp, err := lexer.lex_one(lexer)
-			if err != nil {
-				return lexer.get_tokens(), lexer.make_error(err)
+				next_lexers = append(next_lexers, new_lexer)
 			}
 
-			if tmp != nil {
-				lexer.tokens = append(lexer.tokens, tmp)
-				lexer.skipped = 0
+			return next_lexers, nil
+		} else {
+			if !is_not_critical {
+				return nil, err
 			}
-		}
-	} else {
-		for !lexer.IsExhausted() {
+
 			tmp, err := lexer.lex_one(lexer)
 			if err != nil {
 				lexer.Err = lexer.make_error(err)
 
-				return lexer.get_tokens(), lexer.Err
+				/* str, err := lexer.table.Closest(match.GetChars(), 2) // Magic number.
+				if err == nil {
+					lexer.Err.SetSuggestion("Did you mean '" + str + "'?")
+				} else {
+					words := lexer.matcher.GetRuleNames()
+					gcstr.QuoteStrings(words)
+
+					if lexer.matcher.HasSkipped() {
+						words = append(words, "any other skipped character")
+					}
+
+					lexer.Err.SetSuggestion("Did you mean " + gcstr.OrString(words, false) + "?")
+				} */
+
+				return nil, lexer.Err
 			}
 
 			if tmp != nil {
 				lexer.tokens = append(lexer.tokens, tmp)
 				lexer.skipped = 0
 			}
+
+			return []*Lexer[S]{lexer}, nil
+		}
+	} else if has_matcher {
+		at := lexer.Pos()
+
+		_, err := lexer.matcher.Match(lexer)
+		if err == nil {
+			matches := lexer.matcher.GetMatches()
+
+			next_lexers := make([]*Lexer[S], 0, len(matches))
+
+			for _, match := range matches {
+				new_lexer := lexer.copy()
+
+				if match.IsShouldSkip() {
+					new_lexer.skip(match.GetChars())
+				} else {
+					symbol, data := match.GetMatch()
+
+					tk := gr.NewToken(symbol, data, at, nil)
+
+					new_lexer.tokens = append(new_lexer.tokens, tk)
+					new_lexer.skipped = 0
+				}
+
+				next_lexers = append(next_lexers, new_lexer)
+			}
+
+			return next_lexers, nil
+		} else {
+			return nil, err
+		}
+	} else {
+		// at := lexer.Pos()
+
+		tmp, err := lexer.lex_one(lexer)
+		if err != nil {
+			lexer.Err = lexer.make_error(err)
+
+			/* str, err := lexer.table.Closest(match.GetChars(), 2) // Magic number.
+			if err == nil {
+				lexer.Err.SetSuggestion("Did you mean '" + str + "'?")
+			} else {
+				words := lexer.matcher.GetRuleNames()
+				gcstr.QuoteStrings(words)
+
+				if lexer.matcher.HasSkipped() {
+					words = append(words, "any other skipped character")
+				}
+
+				lexer.Err.SetSuggestion("Did you mean " + gcstr.OrString(words, false) + "?")
+			} */
+
+			return nil, lexer.Err
+		}
+
+		if tmp != nil {
+			lexer.tokens = append(lexer.tokens, tmp)
+			lexer.skipped = 0
+		}
+
+		return []*Lexer[S]{lexer}, nil
+	}
+}
+
+// FullLex lexes the input stream of the lexer and returns the tokens.
+//
+// Parameters:
+//   - data: The input stream of the lexer.
+//
+// Returns:
+//   - []*gr.Token[S]: The tokens of the lexer that were lexed so far.
+//   - error: An error of type *ErrLexing if the lexing failed.
+func (lexer *Lexer[S]) FullLex(data []byte) (iter.Seq[*Lexer[S]], error) {
+	lexer.Init(data)
+
+	lexer.Reset()
+
+	stack := []*Lexer[S]{lexer}
+
+	var solutions []*Lexer[S]
+
+	var most_likely_err *ErrLexing
+	var level int
+
+	for len(stack) > 0 {
+		top := stack[len(stack)-1]
+		stack = stack[:len(stack)-1]
+
+		if top.IsExhausted() {
+			solutions = append(solutions, top)
+			continue
+		}
+
+		new_lexers, err := top.sub_cmp()
+		if err != nil {
+			weight := len(top.get_tokens())
+
+			if most_likely_err != nil {
+				if weight > level {
+					most_likely_err = top.Err
+					level = weight
+				}
+			} else {
+				level = weight
+				most_likely_err = top.Err
+			}
+		} else {
+			stack = append(stack, new_lexers...)
 		}
 	}
 
-	return lexer.get_tokens(), nil
+	if len(solutions) == 0 {
+		return nil, most_likely_err
+	}
+
+	return func(yield func(lex *Lexer[S]) bool) {
+		for _, solution := range solutions {
+			if !yield(solution) {
+				return
+			}
+		}
+	}, nil
 }
 
 // skip skips the characters of the lexer.
