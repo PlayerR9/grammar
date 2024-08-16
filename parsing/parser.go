@@ -9,9 +9,9 @@ import (
 	gcos "github.com/PlayerR9/go-commons/os"
 	gcstr "github.com/PlayerR9/go-commons/strings"
 	dbg "github.com/PlayerR9/go-debug/assert"
+	"github.com/PlayerR9/grammar/ast"
 	displ "github.com/PlayerR9/grammar/displayer"
 	gr "github.com/PlayerR9/grammar/grammar"
-	"github.com/PlayerR9/grammar/traversing"
 )
 
 // DecisionFunc is the function that returns the decision of the parser.
@@ -395,13 +395,13 @@ func (p *Parser[S]) FullParseWithSteps(tokens []*gr.Token[S], data []byte, tab_s
 
 // display_stack is a helper function that displays the stack.
 func (p Parser[S]) display_stack() {
-	for _, elem := range p.stack {
-		var printer traversing.AstPrinter
+	var pr ast.AstPrinter[*gr.Token[S]]
 
-		err := traversing.Apply(&printer, elem)
+	for _, elem := range p.stack {
+		err := ast.Apply(&pr, elem)
 		dbg.AssertErr(err, "traversing.Apply(&printer, %s)", elem.String())
 
-		fmt.Println(printer.String())
+		fmt.Println(pr.String())
 		fmt.Println()
 	}
 }

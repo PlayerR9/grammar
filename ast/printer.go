@@ -8,19 +8,19 @@ import (
 	dbg "github.com/PlayerR9/go-debug/assert"
 )
 
-type Traversable interface {
-	DirectChild() iter.Seq[Traversable]
-	BackwardChild() iter.Seq[Traversable]
-	Noder
-}
-
 // AstPrinter is a tree printer.
-type AstPrinter struct {
+type AstPrinter[T interface {
+	comparable
+	DirectChild() iter.Seq[T]
+	BackwardChild() iter.Seq[T]
+	IsLeaf() bool
+	String() string
+}] struct {
 	// lines is the list of lines.
 	lines *gcstr.LineBuffer
 
 	// seen is the list of seen nodes.
-	seen map[Traversable]bool
+	seen map[T]bool
 
 	// same_level is true if the node is on the same level.
 	same_level bool
@@ -33,7 +33,7 @@ type AstPrinter struct {
 }
 
 // Reset implements the Traverser interface.
-func (p *AstPrinter) Reset() {
+func (p *AstPrinter[T]) Reset() {
 	if p.lines != nil {
 		p.lines.Reset()
 	} else {
@@ -48,17 +48,17 @@ func (p *AstPrinter) Reset() {
 		}
 	}
 
-	p.seen = make(map[Traversable]bool)
+	p.seen = make(map[T]bool)
 	p.indent = ""
 	p.same_level = false
 	p.is_last = true
 }
 
 // Apply implements the Traverser interface.
-func (p *AstPrinter) Apply(node Traversable) ([]TravData, error) {
-	if node == nil {
+func (p *AstPrinter[T]) Apply(node T) ([]TravData[T], error) {
+	/* if node == nil {
 		return nil, nil
-	}
+	} */
 
 	dbg.AssertNotNil(p, "info")
 
@@ -101,12 +101,12 @@ func (p *AstPrinter) Apply(node Traversable) ([]TravData, error) {
 	p.same_level = false
 	p.is_last = false
 
-	var children []TravData
+	var children []TravData[T]
 
 	for c := range node.DirectChild() {
-		td := TravData{
+		td := TravData[T]{
 			Node: c,
-			Data: &AstPrinter{
+			Data: &AstPrinter[T]{
 				lines:      p.lines,
 				seen:       p.seen,
 				indent:     indent.String(),
@@ -124,7 +124,7 @@ func (p *AstPrinter) Apply(node Traversable) ([]TravData, error) {
 
 	if len(children) >= 2 {
 		for _, c := range children {
-			data := dbg.AssertConv[*AstPrinter](c.Data, "c.Data")
+			data := dbg.AssertConv[*AstPrinter[T]](c.Data, "c.Data")
 
 			data.same_level = true
 		}
@@ -132,7 +132,7 @@ func (p *AstPrinter) Apply(node Traversable) ([]TravData, error) {
 
 	last_child := children[len(children)-1].Data
 
-	tmp := dbg.AssertConv[*AstPrinter](last_child, "last_child")
+	tmp := dbg.AssertConv[*AstPrinter[T]](last_child, "last_child")
 
 	tmp.is_last = true
 
@@ -142,6 +142,6 @@ func (p *AstPrinter) Apply(node Traversable) ([]TravData, error) {
 // String implements the fmt.Stringer interface.
 //
 // Returns the printed tree as a string with newlines.
-func (p *AstPrinter) String() string {
+func (p *AstPrinter[T]) String() string {
 	return p.lines.String()
 }
