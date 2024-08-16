@@ -1,12 +1,14 @@
 package lexing
 
 import (
+	"errors"
 	"io"
 	"unicode/utf8"
 
 	gccdm "github.com/PlayerR9/go-commons/CustomData/matcher"
 	gcch "github.com/PlayerR9/go-commons/runes"
 	gcstr "github.com/PlayerR9/go-commons/strings"
+	dbg "github.com/PlayerR9/go-debug/assert"
 	gr "github.com/PlayerR9/grammar/grammar"
 )
 
@@ -40,48 +42,47 @@ type Lexer[S gr.TokenTyper] struct {
 	matcher gccdm.Matcher[S]
 
 	// table is the lavenshtein table of the lexer.
-	table gccdm.LavenshteinTable
+	table *gccdm.LavenshteinTable
 
 	// skipped is the number of skipped characters.
 	skipped int
 }
 
-// NewLexer creates a new lexer.
+// WithLexFunc sets the function that lexes the next token of the lexer.
 //
 // Parameters:
-//   - lex_one_func: The function that lexes the next token of the lexer.
-//   - matcher: The matcher of the lexer.
+//   - lex_one: The function that lexes the next token of the lexer.
 //
-// Returns:
-//   - *Lexer: The new lexer.
-//
-// It returns nil if the lex_one_func is nil.
-func NewLexer[S gr.TokenTyper](lex_one_func LexOneFunc[S], matcher gccdm.Matcher[S]) *Lexer[S] {
-	if lex_one_func == nil {
-		return nil
-	}
-
-	var table gccdm.LavenshteinTable
-
-	table.AddWords(matcher.GetWords())
-
-	return &Lexer[S]{
-		lex_one: lex_one_func,
-		matcher: matcher,
-		table:   table,
-	}
+// Use this to specify custom lexing functions that are not matched by the keyword matcher.
+func (l *Lexer[S]) WithLexFunc(lex_one LexOneFunc[S]) {
+	l.lex_one = lex_one
 }
 
 // Reset resets the lexer.
 //
 // This utility function allows to reset the information contained in the lexer
 // so that it can be used multiple times.
+//
+// However, the internal table is not resetted for efficiency reasons. As such, calling
+// functions such as AddToSkipRule() and AddToMatchRule() won't update the table after
+// the first call; leading to inconsistencies.
+//
+// Make sure to prepare everything before calling this or the Lex function.
 func (l *Lexer[S]) Reset() {
 	gr.CleanTokens(l.tokens)
 	l.tokens = l.tokens[:0]
 
 	l.Err = nil
 	l.skipped = 0
+
+	if l.table == nil {
+		var table gccdm.LavenshteinTable
+
+		err := table.AddWords(l.matcher.GetWords())
+		dbg.AssertErr(err, "table.AddWords(l.matcher.GetWords())")
+
+		l.table = &table
+	}
 }
 
 // make_error returns the error reason of the lexer.
@@ -158,19 +159,14 @@ func (lexer *Lexer[S]) FullLex(data []byte) ([]*gr.Token[S], error) {
 
 	lexer.Reset()
 
-	if lexer.matcher.IsEmpty() {
-		for !lexer.IsExhausted() {
-			tmp, err := lexer.lex_one(lexer)
-			if err != nil {
-				return lexer.get_tokens(), lexer.make_error(err)
-			}
+	has_matcher := !lexer.matcher.IsEmpty()
+	has_lexer := lexer.lex_one != nil
 
-			if tmp != nil {
-				lexer.tokens = append(lexer.tokens, tmp)
-				lexer.skipped = 0
-			}
-		}
-	} else {
+	if !has_matcher && !has_lexer {
+		return lexer.get_tokens(), errors.New("no lexing function or matcher provided")
+	}
+
+	if has_matcher && has_lexer {
 		for !lexer.IsExhausted() {
 			at := lexer.Pos()
 
@@ -216,6 +212,32 @@ func (lexer *Lexer[S]) FullLex(data []byte) ([]*gr.Token[S], error) {
 				}
 			}
 		}
+	} else if has_matcher {
+		for !lexer.IsExhausted() {
+			tmp, err := lexer.lex_one(lexer)
+			if err != nil {
+				return lexer.get_tokens(), lexer.make_error(err)
+			}
+
+			if tmp != nil {
+				lexer.tokens = append(lexer.tokens, tmp)
+				lexer.skipped = 0
+			}
+		}
+	} else {
+		for !lexer.IsExhausted() {
+			tmp, err := lexer.lex_one(lexer)
+			if err != nil {
+				lexer.Err = lexer.make_error(err)
+
+				return lexer.get_tokens(), lexer.Err
+			}
+
+			if tmp != nil {
+				lexer.tokens = append(lexer.tokens, tmp)
+				lexer.skipped = 0
+			}
+		}
 	}
 
 	return lexer.get_tokens(), nil
@@ -229,4 +251,22 @@ func (lexer *Lexer[S]) skip(chars []rune) {
 	for _, c := range chars {
 		lexer.skipped += utf8.RuneLen(c)
 	}
+}
+
+func (lexer *Lexer[S]) AddToMatch(symbol S, word string) error {
+	err := lexer.matcher.AddToMatch(symbol, word)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (lexer *Lexer[S]) AddToSkipRule(words ...string) error {
+	err := lexer.matcher.AddToSkipRule(words...)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
