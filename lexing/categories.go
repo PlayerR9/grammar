@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"unicode"
 
 	dbg "github.com/PlayerR9/go-debug/assert"
 )
@@ -284,4 +285,44 @@ func MakeCategoryLexer(is func(c rune) bool, mode LexMode) LexFunc {
 	}
 
 	return f
+}
+
+var (
+	// [0-9]*
+	CatDigits LexFunc
+
+	// [0-9]+
+	CatMustDigits LexFunc
+
+	// [A-Z]*
+	CatUppercases LexFunc
+
+	// [A-Z]+
+	CatMustUppercases LexFunc
+
+	// [a-z]*
+	CatLowercases LexFunc
+
+	// [a-z]+
+	CatMustLowercases LexFunc
+)
+
+func init() {
+	// [0-9]*
+	CatDigits = MakeCategoryLexer(unicode.IsDigit, LexMany)
+
+	// [0-9]+
+	CatMustDigits = MakeCategoryLexer(unicode.IsDigit, MustLexMany)
+
+	// [A-Z]*
+	CatUppercases = MakeCategoryLexer(unicode.IsUpper, LexMany)
+
+	// [A-Z]+
+	CatMustUppercases = MakeCategoryLexer(unicode.IsUpper, MustLexMany)
+
+	// [a-z]*
+	CatLowercases = MakeCategoryLexer(unicode.IsLower, LexMany)
+
+	// [a-z]+
+	CatMustLowercases = MakeCategoryLexer(unicode.IsLower, MustLexMany)
 }
