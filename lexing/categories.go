@@ -2,7 +2,6 @@ package lexing
 
 import (
 	"errors"
-	"fmt"
 	"io"
 	"unicode"
 
@@ -19,32 +18,12 @@ func init() {
 	NoMatch = errors.New("no match")
 }
 
-// LexMode is the lexing mode of a category.
-type LexMode int
-
-const (
-	// LexOne is the lexing mode that lexes one character at a time. No more, no less.
-	LexOne LexMode = iota
-
-	// LexMany is the lexing mode that lexes many characters at a time; including
-	// no characters at all.
-	LexMany
-
-	// LexOptional is the lexing mode that lexes one character at a time. However, no
-	// character is also accepted.
-	LexOptional
-
-	// MustLexMany is the lexing mode that lexes many characters at a time. However,
-	// there must be at least one matching character.
-	MustLexMany
-)
-
 // LexCategory reads the content of the stream and returns the list of runes according to the given function.
 //
 // Parameters:
 //   - scanner: The rune scanner.
 //   - is: The function that checks if a character is part of the category.
-//   - mode: The lexing mode.
+//   - lex_one: Whether to lex one or more times.
 //
 // Returns:
 //   - []rune: The list of runes.
@@ -54,15 +33,14 @@ const (
 //   - NoMatch: When a match is not found, regardless of whether the end of the stream is reached or not.
 //   - io.EOF: When the end of the stream is reached but a match was found.
 //   - any other error that is not NoMatch or io.EOF.
-func LexCategory(scanner io.RuneScanner, is func(rune) bool, mode LexMode) ([]rune, error) {
+func LexCategory(scanner io.RuneScanner, is func(rune) bool, lex_one bool) ([]rune, error) {
 	if is == nil {
 		return nil, NoMatch
 	}
 
 	var chars []rune
 
-	switch mode {
-	case LexOne:
+	if lex_one {
 		if scanner == nil {
 			return nil, NoMatch
 		}
@@ -84,47 +62,7 @@ func LexCategory(scanner io.RuneScanner, is func(rune) bool, mode LexMode) ([]ru
 		}
 
 		chars = []rune{c}
-	case LexMany:
-		if scanner == nil {
-			return nil, nil
-		}
-
-		for {
-			c, _, err := scanner.ReadRune()
-			if err == io.EOF {
-				break
-			} else if err != nil {
-				return chars, err
-			}
-
-			if !is(c) {
-				err = scanner.UnreadRune()
-				dbg.AssertErr(err, "scanner.UnreadRune()")
-
-				break
-			}
-
-			chars = append(chars, c)
-		}
-	case LexOptional:
-		if scanner == nil {
-			return nil, nil
-		}
-
-		c, _, err := scanner.ReadRune()
-		if err == io.EOF {
-			return nil, nil
-		} else if err != nil {
-			return nil, err
-		}
-
-		if !is(c) {
-			err = scanner.UnreadRune()
-			dbg.AssertErr(err, "scanner.UnreadRune()")
-		} else {
-			chars = append(chars, c)
-		}
-	case MustLexMany:
+	} else {
 		if scanner == nil {
 			return nil, NoMatch
 		}
@@ -150,8 +88,6 @@ func LexCategory(scanner io.RuneScanner, is func(rune) bool, mode LexMode) ([]ru
 		if len(chars) == 0 {
 			return nil, NoMatch
 		}
-	default:
-		return nil, fmt.Errorf("invalid mode: %d", mode)
 	}
 
 	return chars, nil
@@ -162,19 +98,18 @@ func LexCategory(scanner io.RuneScanner, is func(rune) bool, mode LexMode) ([]ru
 //
 // Parameters:
 //   - is: The function that checks if a character is part of the category.
-//   - mode: The lexing mode.
+//   - lex_one: Whether to lex one or more times.
 //
 // Returns:
 //   - LexFunc: The new lexing function. Nil if is is nil.
-func MakeCategoryLexer(is func(c rune) bool, mode LexMode) LexFunc {
+func MakeCategoryLexer(is func(c rune) bool, lex_one bool) LexFunc {
 	if is == nil {
 		return nil
 	}
 
 	var f LexFunc
 
-	switch mode {
-	case LexOne:
+	if lex_one {
 		f = func(scanner io.RuneScanner) ([]rune, error) {
 			if scanner == nil {
 				return nil, NoMatch
@@ -198,59 +133,7 @@ func MakeCategoryLexer(is func(c rune) bool, mode LexMode) LexFunc {
 
 			return []rune{c}, nil
 		}
-	case LexMany:
-		f = func(scanner io.RuneScanner) ([]rune, error) {
-			if scanner == nil {
-				return nil, nil
-			}
-
-			var chars []rune
-
-			for {
-				c, _, err := scanner.ReadRune()
-				if err == io.EOF {
-					break
-				} else if err != nil {
-					return chars, err
-				}
-
-				if !is(c) {
-					err = scanner.UnreadRune()
-					dbg.AssertErr(err, "scanner.UnreadRune()")
-
-					break
-				}
-
-				chars = append(chars, c)
-			}
-
-			return chars, nil
-		}
-	case LexOptional:
-		f = func(scanner io.RuneScanner) ([]rune, error) {
-			if scanner == nil {
-				return nil, nil
-			}
-
-			c, _, err := scanner.ReadRune()
-			if err != nil {
-				if err != io.EOF {
-					return nil, err
-				}
-
-				return nil, nil
-			}
-
-			if !is(c) {
-				err = scanner.UnreadRune()
-				dbg.AssertErr(err, "scanner.UnreadRune()")
-
-				return nil, nil
-			}
-
-			return []rune{c}, nil
-		}
-	case MustLexMany:
+	} else {
 		f = func(scanner io.RuneScanner) ([]rune, error) {
 			if scanner == nil {
 				return nil, NoMatch
@@ -288,41 +171,23 @@ func MakeCategoryLexer(is func(c rune) bool, mode LexMode) LexFunc {
 }
 
 var (
-	// [0-9]*
+	// [0-9]+
 	CatDigits LexFunc
 
-	// [0-9]+
-	CatMustDigits LexFunc
-
-	// [A-Z]*
+	// [A-Z]+
 	CatUppercases LexFunc
 
-	// [A-Z]+
-	CatMustUppercases LexFunc
-
-	// [a-z]*
-	CatLowercases LexFunc
-
 	// [a-z]+
-	CatMustLowercases LexFunc
+	CatLowercases LexFunc
 )
 
 func init() {
-	// [0-9]*
-	CatDigits = MakeCategoryLexer(unicode.IsDigit, LexMany)
-
 	// [0-9]+
-	CatMustDigits = MakeCategoryLexer(unicode.IsDigit, MustLexMany)
-
-	// [A-Z]*
-	CatUppercases = MakeCategoryLexer(unicode.IsUpper, LexMany)
+	CatDigits = MakeCategoryLexer(unicode.IsDigit, false)
 
 	// [A-Z]+
-	CatMustUppercases = MakeCategoryLexer(unicode.IsUpper, MustLexMany)
-
-	// [a-z]*
-	CatLowercases = MakeCategoryLexer(unicode.IsLower, LexMany)
+	CatUppercases = MakeCategoryLexer(unicode.IsUpper, false)
 
 	// [a-z]+
-	CatMustLowercases = MakeCategoryLexer(unicode.IsLower, MustLexMany)
+	CatLowercases = MakeCategoryLexer(unicode.IsLower, false)
 }
