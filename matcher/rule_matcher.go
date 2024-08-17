@@ -2,14 +2,12 @@ package matcher
 
 import (
 	"errors"
-	"fmt"
-	"go/scanner"
 	"io"
+	"iter"
 
 	gcers "github.com/PlayerR9/go-commons/errors"
 	gcslc "github.com/PlayerR9/go-commons/slices"
-	dbg "github.com/PlayerR9/go-debug/assert"
-	gr "github.com/PlayerR9/grammar/grammar"
+	grmch "github.com/PlayerR9/grammar/machine"
 )
 
 // LexerMatcher is an interface that defines the behavior of a lexer matcher.
@@ -45,8 +43,8 @@ type LexerMatcher interface {
 	IsValid() bool
 }
 
-type Rule[S gr.TokenTyper] struct {
-	symbol S
+type Rule struct {
+	symbol int
 	rule   LexerMatcher
 }
 
@@ -55,203 +53,215 @@ type RuleMatched struct {
 	chars  []rune
 }
 
-type MatcherState int
-
 const (
-	CriticalState MatcherState = iota - 2
-	EndState
-	InitialState
-	IndexLoadingState
+	IndexLoadingState grmch.SystemState = iota + 1
 	FilteringStepState
 )
 
-type RuleMatcher[S gr.TokenTyper] struct {
-	rules         []Rule[S]
+var (
+	rm_fsm *grmch.MachineState[*RuleMatcherInfo]
+)
+
+func init() {
+	init_fn := func(info *RuleMatcherInfo, _ *rune) (grmch.SystemState, error) {
+		info.indices = info.indices[:0]
+
+		info.eval = gcers.ErrOrSol[*RuleMatched]{}
+		// When go-commons is updated, replace the following line with: rm.eval.Reset()
+
+		info.chars = info.chars[:0]
+
+		info.eof_completed = false
+		info.err = nil
+
+		return IndexLoadingState, nil
+	}
+
+	cleanup_fn := func(info *RuleMatcherInfo) {
+		if len(info.indices) > 0 {
+			info.indices = info.indices[:0]
+		}
+		info.indices = nil
+
+		info.eval = gcers.ErrOrSol[*RuleMatched]{}
+		// When go-commons is updated, replace the following line with: rm.eval.Reset()
+
+		if len(info.chars) > 0 {
+			info.chars = info.chars[:0]
+		}
+		info.chars = nil
+
+		info.eof_completed = false
+		info.err = nil
+	}
+
+	rm_fsm = grmch.NewMachineState(init_fn)
+	rm_fsm.WithCleanup(cleanup_fn)
+
+	index_loading_fn := func(info *RuleMatcherInfo, char *rune) (grmch.SystemState, error) {
+		if char == nil {
+			info.err = NewErrNoMatch(io.EOF)
+
+			return grmch.EndSS, nil
+		}
+
+		c := *char
+
+		for i, rule := range info.global.All() {
+			err := rule.FirstMatch(c)
+			if err == nil {
+				info.indices = append(info.indices, i)
+			} else {
+				info.eval.AddErr(err, 0)
+			}
+		}
+
+		if len(info.indices) > 0 {
+			info.chars = append(info.chars, c)
+			return FilteringStepState, nil
+		}
+
+		/* 	err = scanner.UnreadRune()
+		dbg.AssertErr(err, "scanner.UnreadRune()") */
+
+		errs := info.eval.Errors()
+
+		info.err = NewErrNoMatch(errs[0]) // TODO: handle multiple errors
+
+		return grmch.EndSS, nil
+	}
+
+	rm_fsm.AddState(IndexLoadingState, index_loading_fn)
+
+	filtering_step_fn := func(info *RuleMatcherInfo, char *rune) (grmch.SystemState, error) {
+		if len(info.indices) == 0 {
+			if !info.eof_completed {
+				/* err := scanner.UnreadRune()
+				dbg.AssertErr(err, "scanner.UnreadRune()") */
+
+				info.chars = info.chars[:len(info.chars)-1]
+			} else {
+				fn := func(idx int) bool {
+					rule := info.global.get_rule_at(idx)
+					return rule.IsValid()
+				}
+
+				tmp, ok := gcslc.SFSeparateEarly(info.indices, fn)
+				if !ok {
+					info.err = NewErrNoMatch(errors.New("[MAKE SUGGESTIONS HERE]"))
+					return grmch.EndSS, nil
+				}
+
+				info.indices = tmp
+			}
+
+			return grmch.EndSS, nil
+		}
+
+		if char == nil {
+			info.eof_completed = true
+
+			return grmch.EndSS, nil
+		}
+
+		level := len(info.indices)
+		info.chars = append(info.chars, *char)
+
+		fn := func(idx int) bool {
+			// dbg.AssertThat("idx", idx).InRange(0, len(info.indices)-1).Panic()
+			rule := info.global.get_rule_at(idx)
+
+			ok, err := rule.Match(*char)
+			if err == nil && !ok {
+				return true
+			}
+
+			if err != nil {
+				info.eval.AddErr(err, level)
+
+				return false
+			}
+
+			match := &RuleMatched{
+				symbol: info.global.get_symbol_at(idx),
+				chars:  make([]rune, len(info.chars)),
+			}
+			copy(match.chars, info.chars)
+
+			info.eval.AddSol(match, level)
+
+			return false
+		}
+
+		info.indices = gcslc.SliceFilter(info.indices, fn)
+
+		return FilteringStepState, nil
+	}
+
+	rm_fsm.AddState(FilteringStepState, filtering_step_fn)
+}
+
+type RuleMatcherInfo struct {
+	global        *RuleMatcher
 	indices       []int
 	eval          gcers.ErrOrSol[*RuleMatched]
 	chars         []rune
 	err           error
 	eof_completed bool
-	scanner       io.RuneScanner
 }
 
-// Init implements the MachineStater interface.
-func (rm *RuleMatcher[S]) Init() {
-	rm.indices = rm.indices[:0]
-	rm.eval = gcers.ErrOrSol[*RuleMatched]{}
-	// When go-commons is updated, replace the following line with: rm.eval.Reset()
-	rm.chars = rm.chars[:0]
-
-	rm.eof_completed = false
-
-	rm.err = nil
-	rm.scanner = nil
+type RuleMatcher struct {
+	rules []Rule
 }
 
-func (rm *RuleMatcher[S]) Execute(state MatcherState, args ...any) MatcherState {
-	switch state {
-	case InitialState:
-		if len(args) == 0 {
-			return EndState, errors.New("required first argument to be of type io.RuneScanner, got nil instead")
-		}
-
-		scanner, ok := args[0].(io.RuneScanner)
-		if !ok {
-			return EndState, fmt.Errorf("required first argument to be of type io.RuneScanner, got %T instead", args[0])
-		}
-
-		rm.scanner = scanner
-
-		return IndexLoadingState, nil
-	case IndexLoadingState:
-		/* if scanner == nil {
-			rm.err = NewErrNoMatch(errors.New("empty scanner"))
-
-			return EndState
-		} */
-
-		char, _, err := rm.scanner.ReadRune()
-		if err == io.EOF {
-			rm.err = NewErrNoMatch(err)
-
-			return EndState, nil
-		}
-
-		if err != nil {
-			rm.err = err
-
-			return EndState, nil
-		}
-
-		for i, rule := range rm.rules {
-			err := rule.rule.FirstMatch(char)
-			if err == nil {
-				rm.indices = append(rm.indices, i)
-			} else {
-				rm.eval.AddErr(err, 0)
-			}
-		}
-
-		if len(rm.indices) > 0 {
-			rm.chars = append(rm.chars, char)
-
-			return FilteringStepState
-		}
-
-		err = scanner.UnreadRune()
-		dbg.AssertErr(err, "scanner.UnreadRune()")
-
-		errs := rm.eval.Errors()
-
-		rm.err = NewErrNoMatch(errs[0])
-
-		return EndState // TODO: handle multiple errors
-	case FilteringStepState:
-		if len(rm.indices) == 0 {
-			if !rm.eof_completed {
-				err := scanner.UnreadRune()
-				dbg.AssertErr(err, "scanner.UnreadRune()")
-
-				rm.chars = rm.chars[:len(rm.chars)-1]
-			} else {
-				fn := func(idx int) bool {
-					rule := rm.rules[idx]
-
-					return rule.rule.IsValid()
-				}
-
-				tmp, ok := gcslc.SFSeparateEarly(rm.indices, fn)
-				if !ok {
-					rm.err = NewErrNoMatch(rm.make_error())
-					return EndState
-				}
-
-				rm.indices = tmp
-			}
-
-			return EndState
-		}
-
-		char, _, err := scanner.ReadRune()
-		if err == io.EOF {
-			rm.eof_completed = true
-
-			break
-		} else if err != nil {
-			rm.err = err
-
-			return EndState
-		}
-
-		rm.step(char)
-
-		return FilteringStepState
-	case EndState:
-		// Do nothing
-	default:
-		rm.err = fmt.Errorf("invalid state: %d", state)
-
-		return EndState
-	}
-}
-
-func (rm *RuleMatcher[S]) GetSolution() ([]*RuleMatched, error) {
-	ok := rm.eval.HasError()
-	if !ok {
-		sols := rm.eval.Solutions()
-
-		return sols, nil
-	}
-
-	errs := rm.eval.Errors()
-
-	return nil, NewErrNoMatch(errs[0]) // TODO: deal with multiple errors
-}
-
-func (rm *RuleMatcher[S]) AddRule(symbol S, rule LexerMatcher) {
+func (rm *RuleMatcher) AddRule(symbol int, rule LexerMatcher) {
 	if rule == nil {
 		return
 	}
 
-	rm.rules = append(rm.rules, Rule[S]{
+	rm.rules = append(rm.rules, Rule{
 		symbol: symbol,
 		rule:   rule,
 	})
 }
 
-func (rm *RuleMatcher[S]) step(char rune) {
-	level := len(rm.chars)
-	rm.chars = append(rm.chars, char)
+func (rm *RuleMatcher) Match(scanner io.RuneScanner) ([]*RuleMatched, error) {
+	run, clean := rm_fsm.Make(&RuleMatcherInfo{
+		global: rm,
+	})
+	defer clean()
 
-	fn := func(idx int) bool {
-		dbg.AssertThat("idx", idx).InRange(0, len(rm.indices)-1).Panic()
-		rule := rm.rules[idx]
-
-		ok, err := rule.rule.Match(char)
-		if err == nil && !ok {
-			return true
-		}
-
-		if err != nil {
-			rm.eval.AddErr(err, level)
-
-			return false
-		}
-
-		match := &RuleMatched{
-			symbol: int(rule.symbol),
-			chars:  make([]rune, len(rm.chars)),
-		}
-		copy(match.chars, rm.chars)
-
-		rm.eval.AddSol(match, level)
-
-		return false
+	res, err := run(scanner)
+	if err != nil {
+		return nil, err
 	}
 
-	rm.indices = gcslc.SliceFilter(rm.indices, fn)
+	ok := res.eval.HasError()
+	if !ok {
+		sols := res.eval.Solutions()
+
+		return sols, nil
+	}
+
+	errs := res.eval.Errors()
+
+	return nil, NewErrNoMatch(errs[0]) // TODO: deal with multiple errors
 }
 
-func (rm *RuleMatcher[S]) make_error() error {
-	return nil
+func (rm *RuleMatcher) All() iter.Seq2[int, LexerMatcher] {
+	return func(yield func(int, LexerMatcher) bool) {
+		for i, rule := range rm.rules {
+			yield(i, rule.rule)
+		}
+	}
+}
+
+func (rm *RuleMatcher) get_rule_at(idx int) LexerMatcher {
+	rule := rm.rules[idx]
+	return rule.rule
+}
+
+func (rm *RuleMatcher) get_symbol_at(idx int) int {
+	rule := rm.rules[idx]
+	return rule.symbol
 }
