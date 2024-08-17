@@ -12,22 +12,6 @@ type Matched[T RuleTyper] struct {
 	should_skip bool
 }
 
-// new_err_matched creates a new matched with an error.
-//
-// Parameters:
-//   - chars: The matched characters.
-//   - should_skip: True if the rule should be skipped.
-//
-// Returns:
-//   - Matched: The new matched with an error.
-func new_err_matched[T RuleTyper](chars []rune, should_skip bool) Matched[T] {
-	return Matched[T]{
-		symbol:      nil,
-		chars:       chars,
-		should_skip: should_skip,
-	}
-}
-
 // new_matched creates a new matched.
 //
 // Parameters:

@@ -6,10 +6,10 @@ import (
 	"iter"
 	"unicode/utf8"
 
-	gccdm "github.com/PlayerR9/go-commons/CustomData/matcher"
 	gcch "github.com/PlayerR9/go-commons/runes"
 	dbg "github.com/PlayerR9/go-debug/assert"
 	gr "github.com/PlayerR9/grammar/grammar"
+	gccdm "github.com/PlayerR9/grammar/matcher"
 )
 
 // LexOneFunc is the function that lexes the next token of the lexer.
@@ -187,13 +187,13 @@ func (lexer *Lexer[S]) copy() *Lexer[S] {
 	}
 
 	return &Lexer[S]{
-		// CharStream: lexer.CharStream.Copy(),
-		tokens:  new_tokens,
-		lex_one: lexer.lex_one,
-		Err:     err,
-		matcher: lexer.matcher,
-		table:   lexer.table,
-		skipped: lexer.skipped,
+		CharStream: lexer.CharStream.Copy(),
+		tokens:     new_tokens,
+		lex_one:    lexer.lex_one,
+		Err:        err,
+		matcher:    lexer.matcher,
+		table:      lexer.table,
+		skipped:    lexer.skipped,
 	}
 }
 
@@ -216,14 +216,9 @@ func (lexer *Lexer[S]) sub_cmp() ([]*Lexer[S], error) {
 	if has_matcher && has_lexer {
 		at := lexer.Pos()
 
-		var err error
-		is_not_critical := false
-
-		// is_not_critical, err := lexer.matcher.Match(lexer)
+		is_not_critical, err := lexer.matcher.Match(lexer)
 		if err == nil {
-			// matches := lexer.matcher.GetMatches()
-
-			var matches []*gccdm.Matched[S]
+			matches := lexer.matcher.GetMatches()
 
 			next_lexers := make([]*Lexer[S], 0, len(matches))
 
@@ -283,9 +278,7 @@ func (lexer *Lexer[S]) sub_cmp() ([]*Lexer[S], error) {
 
 		_, err := lexer.matcher.Match(lexer)
 		if err == nil {
-			// matches := lexer.matcher.GetMatches()
-
-			var matches []*gccdm.Matched[S]
+			matches := lexer.matcher.GetMatches()
 
 			next_lexers := make([]*Lexer[S], 0, len(matches))
 
