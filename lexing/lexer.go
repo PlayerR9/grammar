@@ -112,14 +112,32 @@ func (l Lexer[S]) make_error(reason error) *ErrLexing {
 	return NewErrLexing(pos+l.skipped, -1, reason)
 }
 
-// get_tokens returns the tokens of the lexer.
+// GetTokens returns the tokens of the lexer.
 //
 // Parameters:
 //   - tokens: The tokens of the lexer.
 //
 // Returns:
 //   - []T: The tokens of the lexer.
-func (lexer Lexer[S]) get_tokens() []*gr.Token[S] {
+func (lexer Lexer[S]) GetTokens() []*gr.Token[S] {
+	/* var has_eof bool
+
+	if len(lexer.tokens) == 0 {
+		has_eof = false
+	} else {
+		last_token := lexer.tokens[len(lexer.tokens)-1]
+
+		if last_token.Type == S(0) {
+			has_eof = true
+		} else {
+			has_eof = false
+		}
+	}
+
+	if has_eof {
+		return lexer.tokens
+	} */
+
 	eof_tk := &gr.Token[S]{
 		Type:      S(0),
 		Data:      "",
