@@ -187,13 +187,13 @@ func (lexer *Lexer[S]) copy() *Lexer[S] {
 	}
 
 	return &Lexer[S]{
-		CharStream: lexer.CharStream.Copy(),
-		tokens:     new_tokens,
-		lex_one:    lexer.lex_one,
-		Err:        err,
-		matcher:    lexer.matcher,
-		table:      lexer.table,
-		skipped:    lexer.skipped,
+		// CharStream: lexer.CharStream.Copy(),
+		tokens:  new_tokens,
+		lex_one: lexer.lex_one,
+		Err:     err,
+		matcher: lexer.matcher,
+		table:   lexer.table,
+		skipped: lexer.skipped,
 	}
 }
 
@@ -216,9 +216,14 @@ func (lexer *Lexer[S]) sub_cmp() ([]*Lexer[S], error) {
 	if has_matcher && has_lexer {
 		at := lexer.Pos()
 
-		is_not_critical, err := lexer.matcher.Match(lexer)
+		var err error
+		is_not_critical := false
+
+		// is_not_critical, err := lexer.matcher.Match(lexer)
 		if err == nil {
-			matches := lexer.matcher.GetMatches()
+			// matches := lexer.matcher.GetMatches()
+
+			var matches []*gccdm.Matched[S]
 
 			next_lexers := make([]*Lexer[S], 0, len(matches))
 
@@ -278,7 +283,9 @@ func (lexer *Lexer[S]) sub_cmp() ([]*Lexer[S], error) {
 
 		_, err := lexer.matcher.Match(lexer)
 		if err == nil {
-			matches := lexer.matcher.GetMatches()
+			// matches := lexer.matcher.GetMatches()
+
+			var matches []*gccdm.Matched[S]
 
 			next_lexers := make([]*Lexer[S], 0, len(matches))
 
@@ -367,7 +374,7 @@ func (lexer *Lexer[S]) FullLex(data []byte) (iter.Seq[*Lexer[S]], error) {
 
 		new_lexers, err := top.sub_cmp()
 		if err != nil {
-			weight := len(top.get_tokens())
+			weight := len(top.GetTokens())
 
 			if most_likely_err != nil {
 				if weight > level {
