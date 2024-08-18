@@ -5,42 +5,13 @@ import (
 	"io"
 )
 
-// SystemState is a system state.
-type SystemState int
-
-const (
-	// EndSS is the end state of the system.
-	EndSS SystemState = iota - 1
-
-	// InitSS is the initial state of the system.
-	InitSS
-)
-
-// CleanupFunc is a function that cleans up the state of the machine.
-//
-// Parameters:
-//   - info: The state machine information.
-//
-// This is used to apply the necessary cleanup operations that allows to clear
-// memory and other resources.
-type CleanupFunc[T any] func(info T)
-
-// StepFunc is a function that executes a state machine step.
-//
-// Parameters:
-//   - info: The state machine information.
-//   - char: The character to process. Nil if the stream is ended.
-//
-// Returns:
-//   - SystemState: The next state of the machine.
-//   - error: The error of the machine. Only used for when a panic-level of error
-//     occurs.
-type StepFunc[T any] func(info T, char *rune) (SystemState, error)
-
 // MachineState is a state machine.
 type MachineState[T any] struct {
 	// table is the state table of the state machine.
 	table map[SystemState]StepFunc[T]
+
+	// transition is the transition table of the state machine.
+	transition map[SystemState]SystemState
 
 	// cleanup is the cleanup function of the state machine.
 	//
@@ -60,7 +31,7 @@ type MachineState[T any] struct {
 //
 // Returns:
 //   - *MachineState: The new state machine. Never return nil.
-func NewMachineState[T any](init func(info T, _ *rune) (SystemState, error)) *MachineState[T] {
+func NewMachineState[T any](to SystemState, init func(info T, _ *rune) (SystemState, error)) *MachineState[T] {
 	if init == nil {
 		init = func(_ T, _ *rune) (SystemState, error) { return EndSS, nil }
 	}
@@ -69,7 +40,8 @@ func NewMachineState[T any](init func(info T, _ *rune) (SystemState, error)) *Ma
 	table[InitSS] = init
 
 	return &MachineState[T]{
-		table: table,
+		table:      table,
+		transition: make(map[SystemState]SystemState),
 	}
 }
 
@@ -81,14 +53,13 @@ func NewMachineState[T any](init func(info T, _ *rune) (SystemState, error)) *Ma
 //
 // If the state already exists, it is overwritten.
 // InitSS, CriticalSS and EndSS are never added.
-func (ms *MachineState[T]) AddState(state SystemState, f StepFunc[T]) {
-	if f == nil {
-		return
-	} else if state == InitSS || state == EndSS {
+func (ms *MachineState[T]) AddState(from, to SystemState, f StepFunc[T]) {
+	if f == nil || from == InitSS || from == EndSS {
 		return
 	}
 
-	ms.table[state] = f
+	ms.table[from] = f
+	ms.transition[from] = to
 }
 
 // WithCleanup sets the cleanup function of the state machine.
@@ -99,16 +70,6 @@ func (ms *MachineState[T]) WithCleanup(cleanup CleanupFunc[T]) {
 	ms.cleanup = cleanup
 }
 
-// RunFunc is a function that executes a state machine and returns it.
-//
-// Parameters:
-//   - scanner: The scanner to process.
-//
-// Returns:
-//   - T: The state machine information.
-//   - error: The error of the machine.
-type RunFunc[T any] func(io.RuneScanner) (T, error)
-
 // Make makes a new state machine.
 //
 // Parameters:
@@ -117,7 +78,79 @@ type RunFunc[T any] func(io.RuneScanner) (T, error)
 // Returns:
 //   - RunFunc: The run function of the state machine.
 //   - func(): The cleanup function of the state machine.
+//
+// Be sure to check the cleanup function if it is not nil. If it is only when
+// WithCleanup was called with a nil value or never called.
 func (ms MachineState[T]) Make(info T) (RunFunc[T], func()) {
+	msr := MachineStepRunner[T]{
+		table: ms.table,
+	}
+
+	f, ok := ms.table[InitSS]
+	if !ok {
+		run_fn := func(scanner io.RuneScanner) (T, error) {
+			return info, fmt.Errorf("invalid state: %d", InitSS)
+		}
+
+		return run_fn, nil
+	}
+
+	fn := func(scanner io.RuneScanner) (T, error) {
+		state, err := f(info, nil)
+		if err != nil {
+			return info, err
+		}
+
+		for state != EndSS {
+			f, ok := ms.table[state]
+			if !ok {
+				return info, fmt.Errorf("invalid state: %d", state)
+			}
+
+			var char *rune
+
+			c, _, err := scanner.ReadRune()
+			if err != nil {
+				if err != io.EOF {
+					return info, err
+				}
+			} else {
+				char = &c
+			}
+
+			state, err = f(info, char)
+			if err != nil {
+				return info, err
+			}
+		}
+
+		return info, nil
+	}
+
+	if ms.cleanup == nil {
+		return fn, nil
+	}
+
+	cleanup_fn := func() {
+		ms.cleanup(info)
+	}
+
+	return fn, cleanup_fn
+}
+
+/*
+// Make makes a new state machine.
+//
+// Parameters:
+//   - info: The state machine information.
+//
+// Returns:
+//   - RunFunc: The run function of the state machine.
+//   - func(): The cleanup function of the state machine.
+//
+// Be sure to check the cleanup function if it is not nil. If it is only when
+// WithCleanup was called with a nil value or never called.
+func (ms MachineState[T]) MakeSteps(info T) (RunFunc[T], func()) {
 	fn := func(scanner io.RuneScanner) (T, error) {
 		f, ok := ms.table[InitSS]
 		if !ok {
@@ -153,15 +186,14 @@ func (ms MachineState[T]) Make(info T) (RunFunc[T], func()) {
 		return info, nil
 	}
 
-	var cleanup func()
-
 	if ms.cleanup == nil {
-		cleanup = func() {}
-	} else {
-		cleanup = func() {
-			ms.cleanup(info)
-		}
+		return fn, nil
 	}
 
-	return fn, cleanup
+	cleanup_fn := func() {
+		ms.cleanup(info)
+	}
+
+	return fn, cleanup_fn
 }
+*/
