@@ -4,7 +4,7 @@ import (
 	"errors"
 
 	gcers "github.com/PlayerR9/go-commons/errors"
-	internal "github.com/PlayerR9/grammar/grammar/internal"
+	internal "github.com/PlayerR9/grammar/internal"
 )
 
 type History[T internal.TokenTyper] struct {

@@ -7,7 +7,7 @@ import (
 	gcers "github.com/PlayerR9/go-commons/errors"
 	uttr "github.com/PlayerR9/go-commons/tree"
 	dbp "github.com/PlayerR9/go-debug/debug"
-	"github.com/PlayerR9/grammar/grammar/internal"
+	"github.com/PlayerR9/grammar/internal"
 )
 
 type Noder interface {

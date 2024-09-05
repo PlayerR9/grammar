@@ -8,7 +8,7 @@ import (
 	"github.com/PlayerR9/go-commons/queue"
 	"github.com/PlayerR9/go-commons/set"
 	dbg "github.com/PlayerR9/go-debug/assert"
-	"github.com/PlayerR9/grammar/grammar/internal"
+	"github.com/PlayerR9/grammar/internal"
 )
 
 type ParseTable[T internal.TokenTyper] struct {

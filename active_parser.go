@@ -5,12 +5,11 @@ import (
 	"fmt"
 	"slices"
 
-	internal "github.com/PlayerR9/grammar/grammar/internal"
-
 	gcers "github.com/PlayerR9/go-commons/errors"
 	"github.com/PlayerR9/go-commons/stack"
 	"github.com/PlayerR9/go-commons/tree"
 	dbg "github.com/PlayerR9/go-debug/assert"
+	internal "github.com/PlayerR9/grammar/internal"
 )
 
 // ActiveParser is the active parser (i.e., the one that is currently parsing).

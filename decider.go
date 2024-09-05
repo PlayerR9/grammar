@@ -7,7 +7,7 @@ import (
 	gcers "github.com/PlayerR9/go-commons/errors"
 	gcslc "github.com/PlayerR9/go-commons/slices"
 	dbg "github.com/PlayerR9/go-debug/assert"
-	internal "github.com/PlayerR9/grammar/grammar/internal"
+	internal "github.com/PlayerR9/grammar/internal"
 )
 
 type Decider[T internal.TokenTyper] struct {

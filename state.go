@@ -5,7 +5,7 @@ import (
 	"slices"
 
 	dbg "github.com/PlayerR9/go-debug/assert"
-	internal "github.com/PlayerR9/grammar/grammar/internal"
+	internal "github.com/PlayerR9/grammar/internal"
 )
 
 // State is the state of the goto graph.

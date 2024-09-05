@@ -3,9 +3,8 @@ package grammar
 import (
 	"iter"
 
-	internal "github.com/PlayerR9/grammar/grammar/internal"
-
 	"github.com/PlayerR9/go-commons/set"
+	internal "github.com/PlayerR9/grammar/internal"
 )
 
 type ConflictMap[T internal.TokenTyper] struct {

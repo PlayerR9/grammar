@@ -6,7 +6,7 @@ import (
 	gcers "github.com/PlayerR9/go-commons/errors"
 	utstk "github.com/PlayerR9/go-commons/stack"
 	dbg "github.com/PlayerR9/go-debug/assert"
-	internal "github.com/PlayerR9/grammar/grammar/internal"
+	internal "github.com/PlayerR9/grammar/internal"
 )
 
 // DecisionFn is the decision function.

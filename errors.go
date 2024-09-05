@@ -5,7 +5,7 @@ import (
 	"strings"
 
 	gcstr "github.com/PlayerR9/go-commons/strings"
-	internal "github.com/PlayerR9/grammar/grammar/internal"
+	internal "github.com/PlayerR9/grammar/internal"
 )
 
 // ErrUnexpectedToken is the error for unexpected tokens.

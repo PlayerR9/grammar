@@ -4,10 +4,9 @@ import (
 	"fmt"
 	"iter"
 
-	internal "github.com/PlayerR9/grammar/grammar/internal"
-
 	gcers "github.com/PlayerR9/go-commons/errors"
 	uttr "github.com/PlayerR9/go-commons/tree"
+	internal "github.com/PlayerR9/grammar/internal"
 )
 
 type ToAstFunc[T internal.TokenTyper, N interface {

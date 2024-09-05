@@ -8,7 +8,7 @@ import (
 	gcers "github.com/PlayerR9/go-commons/errors"
 	gcint "github.com/PlayerR9/go-commons/ints"
 	dbg "github.com/PlayerR9/go-debug/assert"
-	internal "github.com/PlayerR9/grammar/grammar/internal"
+	internal "github.com/PlayerR9/grammar/internal"
 )
 
 type Item[T internal.TokenTyper] struct {
