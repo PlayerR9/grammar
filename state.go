@@ -62,6 +62,13 @@ func (s *State[T]) Rule() iter.Seq2[int, *Item[T]] {
 	}
 }
 
+// IsOfSeed checks if the state is of the seed item.
+//
+// Parameters:
+//   - item: The item to check.
+//
+// Returns:
+//   - bool: True if the state is of the seed item, false otherwise.
 func (s State[T]) IsOfSeed(item *Item[T]) bool {
 	if item == nil {
 		return false
@@ -72,6 +79,10 @@ func (s State[T]) IsOfSeed(item *Item[T]) bool {
 	return s.items[0].Equals(item)
 }
 
+// NextState returns an iterator over the next states.
+//
+// Returns:
+//   - iter.Seq[*State[T]]: The iterator. Never returns nil.
 func (s State[T]) NextState() iter.Seq[*State[T]] {
 	return func(yield func(*State[T]) bool) {
 		for _, next := range s.nexts {
@@ -82,6 +93,10 @@ func (s State[T]) NextState() iter.Seq[*State[T]] {
 	}
 }
 
+// Seed returns the seed item.
+//
+// Returns:
+//   - *Item[T]: The seed item. Never returns nil.
 func (s State[T]) Seed() *Item[T] {
 	return s.items[0]
 }

@@ -29,7 +29,7 @@ type Parser[T internal.TokenTyper] struct {
 	rule_set *RuleSet[T]
 
 	// table is the parsing table.
-	table *ParseTable[T]
+	table *parse_table[T]
 
 	// decision_fn is the decision function.
 	decision_fn DecisionFn[T]
@@ -48,8 +48,8 @@ func NewParser[T internal.TokenTyper](rule_set *RuleSet[T]) (*Parser[T], error) 
 		return nil, gcers.NewErrNilParameter("rule_set")
 	}
 
-	pt := NewParseTable(rule_set.rules)
-	err := pt.Init()
+	pt := new_parse_table(rule_set.rules)
+	err := pt.init()
 	if err != nil {
 		return nil, err
 	}

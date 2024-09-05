@@ -69,12 +69,12 @@ func new_active_parser[T internal.TokenTyper](global *Parser[T], history *Histor
 	}, nil
 }
 
-// pop pops a token from the stack.
+// Pop pops a token from the stack.
 //
 // Returns:
 //   - *Token[T]: The popped token.
 //   - bool: True if the token was popped, false otherwise.
-func (ap *ActiveParser[T]) pop() (*gr.Token[T], bool) {
+func (ap *ActiveParser[T]) Pop() (*gr.Token[T], bool) {
 	return ap.token_stack.Pop()
 }
 

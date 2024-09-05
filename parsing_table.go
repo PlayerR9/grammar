@@ -11,17 +11,29 @@ import (
 	"github.com/PlayerR9/grammar/internal"
 )
 
-type ParseTable[T internal.TokenTyper] struct {
-	symbols  *cmp.Set[T]
+// parse_table is the parsing table.
+type parse_table[T internal.TokenTyper] struct {
+	// symbols is the set of all symbols in the grammar.
+	symbols *cmp.Set[T]
+
+	// rule_set is the set of all rules in the grammar.
 	rule_set *set.Set[*Rule[T]]
+
+	// item_set is the set of all items in the grammar.
 	item_set *set.Set[*Item[T]]
 
-	states       []*State[T]
+	// states is the set of all states in the grammar.
+	states []*State[T]
+
+	// action_table is the action table.
 	action_table map[*State[T]]map[T]internal.ActionType
-	goto_table   map[*State[T]]map[T]*State[T]
+
+	// goto_table is the goto table.
+	goto_table map[*State[T]]map[T]*State[T]
 }
 
-func (pt *ParseTable[T]) make_symbols() {
+// make_symbols is a helper function that makes the symbols set.
+func (pt *parse_table[T]) make_symbols() {
 	dbg.AssertNotNil(pt, "pt")
 	dbg.AssertNotNil(pt.rule_set, "pt.rule_set")
 	dbg.Assert(pt.symbols.IsEmpty(), "symbols is not empty")
@@ -32,7 +44,8 @@ func (pt *ParseTable[T]) make_symbols() {
 	}
 }
 
-func (pt *ParseTable[T]) make_items() {
+// make_items is a helper function that makes the items set.
+func (pt *parse_table[T]) make_items() {
 	dbg.AssertNotNil(pt, "pt")
 	dbg.AssertNotNil(pt.rule_set, "pt.rule_set")
 	dbg.Assert(pt.item_set.IsEmpty(), "item_set is not empty")
@@ -47,8 +60,15 @@ func (pt *ParseTable[T]) make_items() {
 	}
 }
 
-func NewParseTable[T internal.TokenTyper](rules []*Rule[T]) *ParseTable[T] {
-	pt := &ParseTable[T]{
+// new_parse_table creates a new parse table.
+//
+// Parameters:
+//   - rules: The rules of the grammar.
+//
+// Returns:
+//   - *parse_table[T]: The new parse table. Never returns nil.
+func new_parse_table[T internal.TokenTyper](rules []*Rule[T]) *parse_table[T] {
+	pt := &parse_table[T]{
 		symbols:  cmp.NewSet[T](),
 		rule_set: set.NewSetWithItems(rules),
 		item_set: set.NewSet[*Item[T]](),
@@ -60,14 +80,14 @@ func NewParseTable[T internal.TokenTyper](rules []*Rule[T]) *ParseTable[T] {
 	return pt
 }
 
-// GetItemsWithLhs returns all items with the given lhs.
+// get_items_with_lhs returns all items with the given lhs.
 //
 // Parameters:
 //   - lhs: The left-hand side of the items.
 //
 // Returns:
 //   - []*Item[T]: The items with the given lhs.
-func (pt ParseTable[T]) GetItemsWithLhs(lhs T) []*Item[T] {
+func (pt parse_table[T]) get_items_with_lhs(lhs T) []*Item[T] {
 	var items []*Item[T]
 
 	for item := range pt.item_set.All() {
@@ -79,14 +99,14 @@ func (pt ParseTable[T]) GetItemsWithLhs(lhs T) []*Item[T] {
 	return items
 }
 
-// ClosureOfItemSet returns the closure of the given item set.
+// closure returns the closure of the given item set.
 //
 // Parameters:
 //   - seed: The seed items.
 //
 // Returns:
 //   - []*Item[T]: The closure of the item set.
-func (pt ParseTable[T]) Closure(seed []*Item[T]) []*Item[T] {
+func (pt parse_table[T]) closure(seed []*Item[T]) []*Item[T] {
 	if len(seed) == 0 {
 		return nil
 	}
@@ -110,7 +130,7 @@ func (pt ParseTable[T]) Closure(seed []*Item[T]) []*Item[T] {
 				continue
 			}
 
-			tmp := pt.GetItemsWithLhs(rhs)
+			tmp := pt.get_items_with_lhs(rhs)
 			seed = append(seed, tmp...)
 		}
 	}
@@ -145,17 +165,21 @@ func (pt ParseTable[T]) Goto(item *Item[T], rhs T) ([]*Item[T], error) {
 	return pt.Closure([]*Item[T]{item}), nil
 } */
 
-func (pt *ParseTable[T]) make_all_states() error {
+// make_all_states is a helper function that makes all states.
+//
+// Returns:
+//   - error: An error if the closure failed.
+func (pt *parse_table[T]) make_all_states() error {
 	start_symbol := T(0)
 
-	initial_items := pt.GetItemsWithLhs(start_symbol)
+	initial_items := pt.get_items_with_lhs(start_symbol)
 	if len(initial_items) == 0 {
 		return fmt.Errorf("there are no rules for the start symbol (%q)", start_symbol.String())
 	} else if len(initial_items) > 1 {
 		return fmt.Errorf("there are multiple rules for the start symbol (%q)", start_symbol.String())
 	}
 
-	state0 := NewState(initial_items[0], pt.Closure(initial_items))
+	state0 := NewState(initial_items[0], pt.closure(initial_items))
 
 	pt.states = []*State[T]{state0}
 	state_queue := queue.NewQueueWithElems([]*State[T]{state0})
@@ -186,7 +210,7 @@ func (pt *ParseTable[T]) make_all_states() error {
 			}
 
 			if idx == -1 {
-				new_state := NewState(rule, pt.Closure([]*Item[T]{rule}))
+				new_state := NewState(rule, pt.closure([]*Item[T]{rule}))
 
 				state_queue.Enqueue(new_state)
 				pt.states = append(pt.states, new_state)
@@ -201,7 +225,11 @@ func (pt *ParseTable[T]) make_all_states() error {
 	return nil
 }
 
-func (pt *ParseTable[T]) Init() error {
+// init is a helper function that initializes the parsing table.
+//
+// Returns:
+//   - error: An error if the initialization failed.
+func (pt *parse_table[T]) init() error {
 	err := pt.make_all_states()
 	if err != nil {
 		return err

@@ -104,7 +104,7 @@ func (d *decider[T]) filter_lookaheads(indices []int, top1 *gr.Token[T]) ([]int,
 func (d *decider[T]) apply_pop_rule(indices []int, prev T, offset int) ([]int, T) {
 	dbg.AssertThat("offset", dbg.NewOrderedAssert(offset).GreaterThan(0)).Panic()
 
-	top, pop_ok := d.p.pop()
+	top, pop_ok := d.p.Pop()
 
 	expected := utst.NewSet[T]()
 	all_done := true

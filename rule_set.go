@@ -299,7 +299,7 @@ func (rs RuleSet[T]) RulesWithLhs(lhs T) []*Rule[T] {
 func (rs RuleSet[T]) Decision(p *ActiveParser[T]) ([]*Item[T], error) {
 	dbg.AssertNotNil(p, "p")
 
-	top1, ok := p.pop()
+	top1, ok := p.Pop()
 	dbg.AssertOk(ok, "p.Pop()")
 
 	item_list, ok := rs.items[top1.Type]

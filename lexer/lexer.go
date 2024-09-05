@@ -1,13 +1,11 @@
-package grammar
+package lexer
 
 import (
 	"fmt"
 	"io"
-	"strings"
 
 	gcers "github.com/PlayerR9/go-commons/errors"
 	gcch "github.com/PlayerR9/go-commons/runes"
-	dbg "github.com/PlayerR9/go-debug/assert"
 	gr "github.com/PlayerR9/grammar/grammar"
 	internal "github.com/PlayerR9/grammar/internal"
 )
@@ -65,6 +63,10 @@ func NewLexer[T internal.TokenTyper](fn LexOneFunc[T]) (*Lexer[T], error) {
 	}, nil
 }
 
+// SetInputStream sets the input stream of the lexer.
+//
+// Parameters:
+//   - data: The input stream of the lexer.
 func (l *Lexer[T]) SetInputStream(data []byte) {
 	var stream gcch.CharStream
 
@@ -73,6 +75,10 @@ func (l *Lexer[T]) SetInputStream(data []byte) {
 	l.scanner = &stream
 }
 
+// Lex lexes tokens in the input stream.
+//
+// Returns:
+//   - error: An error if the lexer encounters an error.
 func (l *Lexer[T]) Lex() error {
 	// Clear previous tokens
 	if len(l.tokens) > 0 {
@@ -95,6 +101,10 @@ func (l *Lexer[T]) Lex() error {
 	return nil
 }
 
+// Tokens returns the tokens of the lexer.
+//
+// Returns:
+//   - []*grammar.Token: The tokens of the lexer.
 func (l Lexer[T]) Tokens() []*gr.Token[T] {
 	tokens := make([]*gr.Token[T], len(l.tokens), len(l.tokens)+1)
 	copy(tokens, l.tokens)
@@ -109,6 +119,11 @@ func (l Lexer[T]) Tokens() []*gr.Token[T] {
 	return tokens
 }
 
+// NextRune returns the next rune in the input stream.
+//
+// Returns:
+//   - rune: The next rune in the input stream.
+//   - error: An error if any.
 func (l *Lexer[T]) NextRune() (rune, error) {
 	char, _, err := l.scanner.ReadRune()
 	if err != nil {
@@ -118,72 +133,11 @@ func (l *Lexer[T]) NextRune() (rune, error) {
 	return char, nil
 }
 
+// RefuseRune rejects the last read rune in the input stream.
+//
+// Returns:
+//   - error: An error if any.
 func (l *Lexer[T]) RefuseRune() error {
 	err := l.scanner.UnreadRune()
 	return err
-}
-
-// LexGroup is a helper function for lexing a group of characters that satisfy a given predicate according
-// to the following rule:
-//
-//	group+
-//
-// Parameters:
-//   - l: The lexer.
-//   - is_func: The predicate function.
-//
-// Returns:
-//   - string: The group of characters.
-//   - error: An error if any.
-//
-// Errors:
-//   - NotFound: When the group cannot be found because it doesn't exist in the text.
-//   - errors.ErrInvalidParameter: If is_func or l is nil.
-//   - any other error returned by l.NextRune() function.
-func LexGroup[T internal.TokenTyper](l *Lexer[T], is_func func(c rune) bool) (string, error) {
-	if is_func == nil {
-		return "", gcers.NewErrNilParameter("is_func")
-	} else if l == nil {
-		return "", gcers.NewErrNilParameter("l")
-	}
-
-	c, err := l.NextRune()
-	if err == io.EOF {
-		return "", NotFound
-	} else if err != nil {
-		return "", err
-	}
-
-	if !is_func(c) {
-		err := l.RefuseRune()
-		dbg.AssertErr(err, "l.RefuseRune()")
-
-		return "", NotFound
-	}
-
-	var builder strings.Builder
-	builder.WriteRune(c)
-
-	for {
-		c, err := l.NextRune()
-		if err == io.EOF {
-			break
-		} else if err != nil {
-			tmp := l.RefuseRune()
-			dbg.AssertErr(tmp, "l.RefuseRune()")
-
-			return "", err
-		}
-
-		if !is_func(c) {
-			err := l.RefuseRune()
-			dbg.AssertErr(err, "l.RefuseRune()")
-
-			break
-		}
-
-		builder.WriteRune(c)
-	}
-
-	return builder.String(), nil
 }
