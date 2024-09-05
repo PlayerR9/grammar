@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"slices"
 
-	gcers "github.com/PlayerR9/go-commons/errors"
 	"github.com/PlayerR9/go-commons/stack"
 	"github.com/PlayerR9/go-commons/tree"
 	dbg "github.com/PlayerR9/go-debug/assert"
@@ -24,49 +23,100 @@ type ActiveParser[T internal.TokenTyper] struct {
 	// token_stack is the token token_stack.
 	token_stack *stack.RefusableStack[*gr.Token[T]]
 
-	// history is the history of the parser.
-	history *History[T]
-
 	// err is the reason to why the active parser has failed. Nil if it has succeded.
 	err error
+
+	// possible_cause is the possible cause of the error.
+	possible_cause error
+
+	// accept_found is true if an accept was found. False otherwise.
+	accept_found bool
 }
 
-// new_active_parser creates a new active parser.
+// HasError checks if the error is not nil.
+//
+// Returns:
+//   - bool: True if the error is not nil.
+func (ap ActiveParser[T]) HasError() bool {
+	return ap.err != nil
+}
+
+// apply is a helper function that applies the action to the stack.
 //
 // Parameters:
-//   - global: The shared information between active parsers.
+//   - item: The item to apply.
+//
+// Returns:
+//   - bool: True if the action is accepted. False otherwise.
+func (ap *ActiveParser[T]) WalkOne(item *Item[T]) bool {
+	dbg.AssertNotNil(item, "item")
+
+	ap.accept_found = false
+
+	act := item.act
+
+	switch act {
+	case internal.ActShiftType:
+		err := ap.shift()
+
+		if err != nil {
+			ap.err = fmt.Errorf("error shifting: %w", err)
+		}
+	case internal.ActReduceType:
+		err := ap.reduce(item.rule)
+		if err != nil {
+			ap.token_stack.Refuse()
+
+			ap.err = fmt.Errorf("error reducing: %w", err)
+		}
+	case internal.ActAcceptType:
+		err := ap.reduce(item.rule)
+		if err == nil {
+			if ap.token_stack.Size() == 1 {
+				return true
+			}
+
+			ap.err = errors.New("not a valid parse")
+			ap.possible_cause = nil
+		} else {
+			ap.token_stack.Refuse()
+
+			ap.err = fmt.Errorf("error reducing: %w", err)
+		}
+	default:
+		ap.err = fmt.Errorf("invalid action: %v", act)
+	}
+
+	return false
+}
+
+// exec executes the active parser.
+//
+// Parameters:
 //   - history: The history of the parser.
 //
 // Returns:
-//   - *ActiveParser: The new active parser.
-//   - error: An error if 'global' is nil or no tokens are provided.
-func new_active_parser[T internal.TokenTyper](global *Parser[T], history *History[T]) (*ActiveParser[T], error) {
-	if global == nil {
-		return nil, gcers.NewErrNilParameter("global")
-	} else if len(global.tokens) == 0 {
-		return nil, errors.New("no tokens provided")
+//   - []*Item[T]: The possible paths.
+func (ap *ActiveParser[T]) NextEvents() []*Item[T] {
+	items, decision_err := ap.global.rule_set.Decision(ap)
+	ap.token_stack.Refuse()
+
+	if len(items) == 0 {
+		if decision_err == nil {
+			decision_err = errors.New("no action available")
+		}
+
+		ap.err = decision_err
+		ap.possible_cause = nil
+
+		return nil
 	}
 
-	tokens := make([]*gr.Token[T], 0, len(global.tokens))
-	for i := 0; i < len(global.tokens); i++ {
-		tokens = append(tokens, global.tokens[i].Copy())
+	if decision_err != nil {
+		ap.possible_cause = decision_err
 	}
 
-	for i := 0; i < len(tokens)-1; i++ {
-		tokens[i].Lookahead = tokens[i+1]
-	}
-
-	if history == nil {
-		history = NewHistory[T](nil)
-	}
-
-	return &ActiveParser[T]{
-		global:      global,
-		reader:      NewTokenStream(tokens),
-		token_stack: stack.NewRefusableStack[*gr.Token[T]](),
-		history:     history,
-		err:         nil,
-	}, nil
+	return items
 }
 
 // Pop pops a token from the stack.
@@ -78,111 +128,17 @@ func (ap *ActiveParser[T]) Pop() (*gr.Token[T], bool) {
 	return ap.token_stack.Pop()
 }
 
-// can_walk checks if the active parser can walk.
-//
-// Returns:
-//   - bool: True if the active parser can walk, false otherwise.
-func (ap *ActiveParser[T]) can_walk() bool {
-	return ap.history.CanWalk()
-}
-
-// walk walks the active parser.
+/* // exec_witn_fn executes the active parser with a custom decision function.
 //
 // Parameters:
-//   - decision_err: The decision error.
+//   - history: The history of the parser.
 //
 // Returns:
-//   - bool: True if the walk is an accept action, false otherwise.
-func (ap *ActiveParser[T]) walk(decision_err error) bool {
-	var ok bool
+//   - []*util.History[*Item[T]]: The possible paths.
+func (ap *ActiveParser[T]) exec_witn_fn(history *util.History[*Item[T]]) []*util.History[*Item[T]] {
+	dbg.AssertNotNil(history, "history")
 
-	fn := func(item *Item[T]) error {
-		tmp, err := ap.apply(decision_err, item)
-		if err != nil {
-			return err
-		}
-
-		ok = tmp
-
-		return nil
-	}
-
-	err := ap.history.Walk(fn)
-	if err != nil {
-		ap.err = NewErrParsing(err, nil)
-
-		return false
-	}
-
-	return ok
-}
-
-// exec executes the active parser.
-//
-// Returns:
-//   - []*ActiveParser[T]: The possible paths.
-func (ap *ActiveParser[T]) exec() []*ActiveParser[T] {
-	var possible_paths []*ActiveParser[T]
-
-	for {
-		items, decision_err := ap.global.rule_set.Decision(ap)
-		ap.token_stack.Refuse()
-
-		if len(items) == 0 {
-			if decision_err == nil {
-				decision_err = errors.New("no action available")
-			}
-
-			ap.err = NewErrParsing(decision_err, nil)
-
-			return possible_paths
-		}
-
-		if len(items) == 1 {
-			ap.history.AddEvent(items[0])
-		} else {
-			original_history := ap.history.Copy()
-
-			ap.history.AddEvent(items[0])
-
-			for _, item := range items[1:] {
-				new_history := original_history.Copy()
-				new_history.AddEvent(item)
-
-				new_active, err := new_active_parser(ap.global, new_history)
-				dbg.AssertErr(err, "NewActiveParser(ap.global, new_history)")
-
-				possible_paths = append(possible_paths, new_active)
-			}
-		}
-
-		dbg.AssertOk(ap.can_walk(), "p.CanWalk()")
-
-		is_accept := ap.walk(decision_err)
-		if ap.HasError() {
-			return possible_paths
-		}
-
-		if is_accept {
-			if ap.token_stack.Size() != 1 {
-				ap.err = NewErrParsing(errors.New("not a valid parse"), nil)
-
-				return possible_paths
-			}
-
-			break
-		}
-	}
-
-	return possible_paths
-}
-
-// exec_witn_fn executes the active parser with a custom decision function.
-//
-// Returns:
-//   - []*ActiveParser[T]: The possible paths.
-func (ap *ActiveParser[T]) exec_witn_fn() []*ActiveParser[T] {
-	var possible_paths []*ActiveParser[T]
+	var possible_paths []*util.History[*Item[T]]
 
 	for {
 		items, decision_err := ap.global.decision_fn(ap)
@@ -195,39 +151,45 @@ func (ap *ActiveParser[T]) exec_witn_fn() []*ActiveParser[T] {
 				decision_err = errors.New("no action available")
 			}
 
-			ap.err = NewErrParsing(decision_err, nil)
+			ap.err = decision_err
+			ap.possible_cause = nil
 
 			return possible_paths
 		}
 
-		if len(items) == 1 {
-			ap.history.AddEvent(items[0])
-		} else {
-			original_history := ap.history.Copy()
+		if decision_err != nil {
+			ap.possible_cause = decision_err
+		}
 
-			ap.history.AddEvent(items[0])
+		if len(items) == 1 {
+			history.AddEvent(items[0])
+		} else {
+			original_history := history.Copy()
+
+			history.AddEvent(items[0])
 
 			for _, item := range items[1:] {
 				new_history := original_history.Copy()
 				new_history.AddEvent(item)
 
-				new_active, err := new_active_parser(ap.global, new_history)
-				dbg.AssertErr(err, "NewActiveParser(ap.global, new_history)")
-
-				possible_paths = append(possible_paths, new_active)
+				possible_paths = append(possible_paths, new_history)
 			}
 		}
 
-		dbg.AssertOk(ap.can_walk(), "p.CanWalk()")
+		dbg.AssertOk(history.CanWalk(), "p.history.CanWalk()")
 
-		is_accept := ap.walk(decision_err)
-		if ap.HasError() {
+		err := history.WalkOnce()
+		if err != nil {
+			ap.err = err
+			ap.possible_cause = nil
+
 			return possible_paths
 		}
 
-		if is_accept {
+		if ap.accept_found {
 			if ap.token_stack.Size() != 1 {
-				ap.err = NewErrParsing(errors.New("not a valid parse"), nil)
+				ap.err = errors.New("not a valid parse")
+				ap.possible_cause = nil
 
 				return possible_paths
 			}
@@ -237,24 +199,7 @@ func (ap *ActiveParser[T]) exec_witn_fn() []*ActiveParser[T] {
 	}
 
 	return possible_paths
-}
-
-// walk_all walks the active parser.
-func (ap *ActiveParser[T]) walk_all() {
-	err := ap.shift() // initial shift
-	if err != nil {
-		ap.err = NewErrParsing(err, nil)
-
-		return
-	}
-
-	for ap.can_walk() {
-		is_accept := ap.walk(nil)
-		if ap.HasError() || is_accept {
-			break
-		}
-	}
-}
+} */
 
 // reduce is a helper function that reduces the stack.
 //
@@ -307,46 +252,6 @@ func (ap *ActiveParser[T]) shift() error {
 	return nil
 }
 
-// apply is a helper function that applies the action to the stack.
-//
-// Returns:
-//   - bool: True if the parse was accepted, false otherwise.
-//   - error: An error if any.
-func (ap *ActiveParser[T]) apply(decision_err error, item *Item[T]) (bool, error) {
-	dbg.AssertNotNil(item, "item")
-
-	act := item.act
-
-	switch act {
-	case internal.ActShiftType:
-		err := ap.shift()
-
-		if err != nil {
-			return false, NewErrParsing(fmt.Errorf("error shifting: %w", err), decision_err)
-		}
-	case internal.ActReduceType:
-		err := ap.reduce(item.rule)
-		if err != nil {
-			ap.token_stack.Refuse()
-
-			return false, NewErrParsing(fmt.Errorf("error reducing: %w", err), decision_err)
-		}
-	case internal.ActAcceptType:
-		err := ap.reduce(item.rule)
-		if err != nil {
-			ap.token_stack.Refuse()
-
-			return false, NewErrParsing(fmt.Errorf("error accepting: %w", err), decision_err)
-		}
-
-		return true, nil
-	default:
-		return false, NewErrParsing(fmt.Errorf("invalid action: %v", act), decision_err)
-	}
-
-	return false, nil
-}
-
 // Forest returns the tree that were parsed.
 //
 // Returns:
@@ -373,13 +278,9 @@ func (ap ActiveParser[T]) Forest() []*tree.Tree[*gr.Token[T]] {
 // Returns:
 //   - error: An error if any.
 func (ap ActiveParser[T]) Error() error {
-	return ap.err
-}
+	if ap.err == nil {
+		return nil
+	}
 
-// HasError checks if the error is not nil.
-//
-// Returns:
-//   - bool: True if the error is not nil.
-func (ap ActiveParser[T]) HasError() bool {
-	return ap.err != nil
+	return NewErrParsing(ap.err, ap.possible_cause)
 }

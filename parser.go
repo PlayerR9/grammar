@@ -4,10 +4,11 @@ import (
 	"iter"
 
 	gcers "github.com/PlayerR9/go-commons/errors"
-	utstk "github.com/PlayerR9/go-commons/stack"
+	"github.com/PlayerR9/go-commons/stack"
 	dbg "github.com/PlayerR9/go-debug/assert"
 	gr "github.com/PlayerR9/grammar/grammar"
 	internal "github.com/PlayerR9/grammar/internal"
+	util "github.com/PlayerR9/grammar/util/backup"
 )
 
 // DecisionFn is the decision function.
@@ -78,6 +79,44 @@ func NewParserWithFunc[T internal.TokenTyper](decision_fn DecisionFn[T]) (*Parse
 	}, nil
 }
 
+// new_active_parser creates a new active parser.
+//
+// Parameters:
+//   - global: The shared information between active parsers.
+//
+// Returns:
+//   - *ActiveParser: The new active parser.
+//   - error: An error if shifting the first token failed.
+func (p *Parser[T]) active_parser_of() *ActiveParser[T] {
+	dbg.AssertThat("len(p.tokens)", dbg.NewOrderedAssert(len(p.tokens)).GreaterThan(0)).Panic()
+
+	tokens := make([]*gr.Token[T], 0, len(p.tokens))
+	for i := 0; i < len(p.tokens); i++ {
+		tokens = append(tokens, p.tokens[i].Copy())
+	}
+
+	for i := 0; i < len(tokens)-1; i++ {
+		tokens[i].Lookahead = tokens[i+1]
+	}
+
+	new_ap := &ActiveParser[T]{
+		global:         p,
+		reader:         NewTokenStream(tokens),
+		token_stack:    stack.NewRefusableStack[*gr.Token[T]](),
+		err:            nil,
+		possible_cause: nil,
+	}
+
+	err := new_ap.shift() // initial shift
+	if err != nil {
+		new_ap.err = err
+
+		return nil
+	}
+
+	return new_ap
+}
+
 // Parse is the main function of the parser.
 //
 // Parameters:
@@ -87,93 +126,7 @@ func NewParserWithFunc[T internal.TokenTyper](decision_fn DecisionFn[T]) (*Parse
 //   - *ActiveParser[T]: The parser.
 //   - error: An error if any.
 func (p *Parser[T]) Parse(tokens []*gr.Token[T]) iter.Seq[*ActiveParser[T]] {
-	var fn func(yield func(*ActiveParser[T]) bool)
-
 	p.tokens = tokens
 
-	if p.decision_fn == nil {
-		fn = func(yield func(*ActiveParser[T]) bool) {
-			active, err := new_active_parser(p, nil)
-			dbg.AssertErr(err, "NewActiveParser(p, nil)")
-
-			var invalid_parsers []*ActiveParser[T]
-
-			stack := utstk.NewStack(active)
-
-			for {
-				top, ok := stack.Pop()
-				if !ok {
-					break
-				}
-
-				top.walk_all()
-				if top.HasError() {
-					invalid_parsers = append(invalid_parsers, top)
-
-					continue
-				}
-
-				possible_paths := top.exec()
-				dbg.AssertNotNil(possible_paths, "possible_paths")
-
-				for _, path := range possible_paths {
-					stack.Push(path)
-				}
-
-				if top.HasError() {
-					invalid_parsers = append(invalid_parsers, top)
-				} else if !yield(top) {
-					return
-				}
-			}
-
-			// For now we will assume that the last invalid parser is the most likely error.
-			last_invalid := invalid_parsers[len(invalid_parsers)-1]
-
-			_ = yield(last_invalid)
-		}
-	} else {
-		fn = func(yield func(*ActiveParser[T]) bool) {
-			active, err := new_active_parser(p, nil)
-			dbg.AssertErr(err, "NewActiveParser(p, nil)")
-
-			var invalid_parsers []*ActiveParser[T]
-
-			stack := utstk.NewStack(active)
-
-			for {
-				top, ok := stack.Pop()
-				if !ok {
-					break
-				}
-
-				top.walk_all()
-				if top.HasError() {
-					invalid_parsers = append(invalid_parsers, top)
-
-					continue
-				}
-
-				possible_paths := top.exec_witn_fn()
-				dbg.AssertNotNil(possible_paths, "possible_paths")
-
-				for _, path := range possible_paths {
-					stack.Push(path)
-				}
-
-				if top.HasError() {
-					invalid_parsers = append(invalid_parsers, top)
-				} else if !yield(top) {
-					return
-				}
-			}
-
-			// For now we will assume that the last invalid parser is the most likely error.
-			last_invalid := invalid_parsers[len(invalid_parsers)-1]
-
-			_ = yield(last_invalid)
-		}
-	}
-
-	return fn
+	return util.Execute(p.active_parser_of)
 }

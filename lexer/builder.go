@@ -142,10 +142,9 @@ func (b Builder[T]) Build() *Lexer[T] {
 		}
 	}
 
-	lexer, err := NewLexer(fn)
-	dbg.AssertErr(err, "NewLexer()")
-
-	return lexer
+	return &Lexer[T]{
+		fn: fn,
+	}
 }
 
 // Reset resets the lexer builder.

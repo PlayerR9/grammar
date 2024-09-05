@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"io"
 
-	gcers "github.com/PlayerR9/go-commons/errors"
 	gcch "github.com/PlayerR9/go-commons/runes"
 	dbg "github.com/PlayerR9/go-debug/assert"
 	gr "github.com/PlayerR9/grammar/grammar"
@@ -42,26 +41,6 @@ type Lexer[T internal.TokenTyper] struct {
 
 	// fn is the function that lexes the next token of the lexer.
 	fn LexOnceFunc[T]
-}
-
-// NewLexer creates a new lexer.
-//
-// Parameters:
-//   - fn: The function that lexes the next token of the lexer.
-//
-// Returns:
-//   - *Lexer[T]: The new lexer.
-//   - error: An error if the lexing function is nil.
-func NewLexer[T internal.TokenTyper](fn LexOnceFunc[T]) (*Lexer[T], error) {
-	if fn == nil {
-		return nil, gcers.NewErrNilParameter("fn")
-	}
-
-	return &Lexer[T]{
-		scanner: nil,
-		tokens:  nil,
-		fn:      fn,
-	}, nil
 }
 
 // SetInputStream sets the input stream of the lexer.
