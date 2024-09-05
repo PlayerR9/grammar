@@ -5,10 +5,10 @@ import (
 	"fmt"
 	"iter"
 
-	"github.com/PlayerR9/grammar/ast"
-	"github.com/PlayerR9/grammar/grammar"
-	"github.com/PlayerR9/grammar/lexing"
-	"github.com/PlayerR9/grammar/parsing"
+	"github.com/PlayerR9/grammar/OLD/ast"
+	"github.com/PlayerR9/grammar/OLD/grammar"
+	"github.com/PlayerR9/grammar/OLD/lexing"
+	"github.com/PlayerR9/grammar/OLD/parsing"
 
 	dbg "github.com/PlayerR9/go-debug/assert"
 )

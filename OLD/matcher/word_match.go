@@ -4,7 +4,7 @@ import (
 	"io"
 
 	gcch "github.com/PlayerR9/go-commons/runes"
-	grmch "github.com/PlayerR9/grammar/machine"
+	grmch "github.com/PlayerR9/grammar/OLD/machine"
 )
 
 var (

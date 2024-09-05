@@ -8,8 +8,8 @@ import (
 
 	gcch "github.com/PlayerR9/go-commons/runes"
 	dbg "github.com/PlayerR9/go-debug/assert"
-	gr "github.com/PlayerR9/grammar/grammar"
-	gccdm "github.com/PlayerR9/grammar/matcher"
+	gr "github.com/PlayerR9/grammar/OLD/grammar"
+	gccdm "github.com/PlayerR9/grammar/OLD/matcher"
 )
 
 // LexOneFunc is the function that lexes the next token of the lexer.

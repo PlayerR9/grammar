@@ -9,9 +9,9 @@ import (
 	gcos "github.com/PlayerR9/go-commons/os"
 	gcstr "github.com/PlayerR9/go-commons/strings"
 	dbg "github.com/PlayerR9/go-debug/assert"
-	"github.com/PlayerR9/grammar/ast"
-	displ "github.com/PlayerR9/grammar/displayer"
-	gr "github.com/PlayerR9/grammar/grammar"
+	"github.com/PlayerR9/grammar/OLD/ast"
+	displ "github.com/PlayerR9/grammar/OLD/displayer"
+	gr "github.com/PlayerR9/grammar/OLD/grammar"
 )
 
 // DecisionFunc is the function that returns the decision of the parser.

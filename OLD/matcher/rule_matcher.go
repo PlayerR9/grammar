@@ -7,7 +7,7 @@ import (
 
 	gcers "github.com/PlayerR9/go-commons/errors"
 	gcslc "github.com/PlayerR9/go-commons/slices"
-	grmch "github.com/PlayerR9/grammar/machine"
+	grmch "github.com/PlayerR9/grammar/OLD/machine"
 )
 
 // LexerMatcher is an interface that defines the behavior of a lexer matcher.

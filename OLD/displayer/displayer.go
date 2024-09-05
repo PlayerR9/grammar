@@ -11,7 +11,7 @@ import (
 	gcby "github.com/PlayerR9/go-commons/bytes"
 	gcint "github.com/PlayerR9/go-commons/ints"
 	dbg "github.com/PlayerR9/go-debug/assert"
-	"github.com/PlayerR9/grammar/lexing"
+	"github.com/PlayerR9/grammar/OLD/lexing"
 )
 
 var (
