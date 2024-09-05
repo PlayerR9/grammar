@@ -299,7 +299,7 @@ func (rs RuleSet[T]) RulesWithLhs(lhs T) []*Rule[T] {
 func (rs RuleSet[T]) Decision(p *ActiveParser[T]) ([]*Item[T], error) {
 	dbg.AssertNotNil(p, "p")
 
-	top1, ok := p.Pop()
+	top1, ok := p.pop()
 	dbg.AssertOk(ok, "p.Pop()")
 
 	item_list, ok := rs.items[top1.Type]
@@ -315,10 +315,9 @@ func (rs RuleSet[T]) Decision(p *ActiveParser[T]) ([]*Item[T], error) {
 
 	curr := top1.Type
 
-	d, err := NewDecider(p, item_list)
-	dbg.AssertErr(err, "NewDecider(p, item_list)")
+	d := new_decider(p, item_list)
 
-	indices, err = d.Decision(indices, curr)
+	indices, err := d.decision(indices, curr)
 	if err != nil {
 		return nil, err
 	}
@@ -330,17 +329,17 @@ func (rs RuleSet[T]) Decision(p *ActiveParser[T]) ([]*Item[T], error) {
 	for {
 		if len(indices) == 1 {
 			solutions = indices
-		} else if d.OnlyLookaheads(indices, offset) {
-			indices, solutions = d.FilterLookaheads(indices, curr, top1)
+		} else if d.only_lookaheads(indices, offset) {
+			indices, solutions = d.filter_lookaheads(indices, top1)
 		}
 
 		if len(solutions) > 0 {
 			break
 		}
 
-		indices, curr = d.ApplyPopRule(indices, curr, offset)
+		indices, curr = d.apply_pop_rule(indices, curr, offset)
 
-		indices, err = d.Decision(indices, curr)
+		indices, err = d.decision(indices, curr)
 		if err != nil {
 			return nil, err
 		}

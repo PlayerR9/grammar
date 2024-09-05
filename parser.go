@@ -6,6 +6,7 @@ import (
 	gcers "github.com/PlayerR9/go-commons/errors"
 	utstk "github.com/PlayerR9/go-commons/stack"
 	dbg "github.com/PlayerR9/go-debug/assert"
+	gr "github.com/PlayerR9/grammar/grammar"
 	internal "github.com/PlayerR9/grammar/internal"
 )
 
@@ -22,7 +23,7 @@ type DecisionFn[T internal.TokenTyper] func(ap *ActiveParser[T]) ([]*Item[T], er
 // Parser is the grammar parser.
 type Parser[T internal.TokenTyper] struct {
 	// tokens is the token stream.
-	tokens []*Token[T]
+	tokens []*gr.Token[T]
 
 	// rule_set is the rule set.
 	rule_set *RuleSet[T]
@@ -85,14 +86,14 @@ func NewParserWithFunc[T internal.TokenTyper](decision_fn DecisionFn[T]) (*Parse
 // Returns:
 //   - *ActiveParser[T]: The parser.
 //   - error: An error if any.
-func (p *Parser[T]) Parse(tokens []*Token[T]) iter.Seq[*ActiveParser[T]] {
+func (p *Parser[T]) Parse(tokens []*gr.Token[T]) iter.Seq[*ActiveParser[T]] {
 	var fn func(yield func(*ActiveParser[T]) bool)
 
 	p.tokens = tokens
 
 	if p.decision_fn == nil {
 		fn = func(yield func(*ActiveParser[T]) bool) {
-			active, err := NewActiveParser(p, nil)
+			active, err := new_active_parser(p, nil)
 			dbg.AssertErr(err, "NewActiveParser(p, nil)")
 
 			var invalid_parsers []*ActiveParser[T]
@@ -105,14 +106,14 @@ func (p *Parser[T]) Parse(tokens []*Token[T]) iter.Seq[*ActiveParser[T]] {
 					break
 				}
 
-				ok = top.WalkAll()
-				if !ok {
+				top.walk_all()
+				if top.HasError() {
 					invalid_parsers = append(invalid_parsers, top)
 
 					continue
 				}
 
-				possible_paths := top.Exec()
+				possible_paths := top.exec()
 				dbg.AssertNotNil(possible_paths, "possible_paths")
 
 				for _, path := range possible_paths {
@@ -133,7 +134,7 @@ func (p *Parser[T]) Parse(tokens []*Token[T]) iter.Seq[*ActiveParser[T]] {
 		}
 	} else {
 		fn = func(yield func(*ActiveParser[T]) bool) {
-			active, err := NewActiveParser(p, nil)
+			active, err := new_active_parser(p, nil)
 			dbg.AssertErr(err, "NewActiveParser(p, nil)")
 
 			var invalid_parsers []*ActiveParser[T]
@@ -146,14 +147,14 @@ func (p *Parser[T]) Parse(tokens []*Token[T]) iter.Seq[*ActiveParser[T]] {
 					break
 				}
 
-				ok = top.WalkAll()
-				if !ok {
+				top.walk_all()
+				if top.HasError() {
 					invalid_parsers = append(invalid_parsers, top)
 
 					continue
 				}
 
-				possible_paths := top.ExecWithFn()
+				possible_paths := top.exec_witn_fn()
 				dbg.AssertNotNil(possible_paths, "possible_paths")
 
 				for _, path := range possible_paths {

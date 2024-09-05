@@ -11,12 +11,21 @@ import (
 	internal "github.com/PlayerR9/grammar/internal"
 )
 
+// Item is an item in the parsing table.
 type Item[T internal.TokenTyper] struct {
+	// rule is the rule.
 	rule *Rule[T]
-	pos  int
-	act  internal.ActionType
 
-	prevs      *gccmp.Set[T]
+	// pos is the position.
+	pos int
+
+	// act is the action.
+	act internal.ActionType
+
+	// prevs is the set of previous items.
+	prevs *gccmp.Set[T]
+
+	// lookaheads is the set of lookaheads.
 	lookaheads []*gccmp.Set[T]
 }
 
@@ -31,6 +40,7 @@ func (item *Item[T]) Equals(other *Item[T]) bool {
 	return item.rule.Equals(other.rule) && item.pos == other.pos
 }
 
+// String implements the fmt.Stringer interface.
 func (item Item[T]) String() string {
 	var elems []string
 
@@ -67,6 +77,15 @@ func (item Item[T]) String() string {
 	return strings.Join(elems, " ")
 }
 
+// NewItem creates a new item.
+//
+// Parameters:
+//   - rule: The rule.
+//   - pos: The position.
+//
+// Returns:
+//   - *Item[T]: The created item.
+//   - error: An error if the position is invalid or the rule is nil.
 func NewItem[T internal.TokenTyper](rule *Rule[T], pos int) (*Item[T], error) {
 	if rule == nil {
 		return nil, gcers.NewErrNilParameter("rule")
@@ -100,10 +119,18 @@ func NewItem[T internal.TokenTyper](rule *Rule[T], pos int) (*Item[T], error) {
 	}, nil
 }
 
+// IsShift checks if the item is a shift.
+//
+// Returns:
+//   - bool: True if the item is a shift, otherwise false.
 func (item Item[T]) IsShift() bool {
 	return item.pos < item.rule.Size()
 }
 
+// IsReduce checks if the item is a reduce.
+//
+// Returns:
+//   - bool: True if the item is a reduce, otherwise false.
 func (item *Item[T]) IncreaseLookbehind() bool {
 	if item.pos == 0 {
 		return false
@@ -121,6 +148,10 @@ func (item *Item[T]) IncreaseLookbehind() bool {
 	return true
 }
 
+// IsInConflictWith checks if the item is in conflict with another item.
+//
+// Returns:
+//   - bool: True if the item is in conflict with another item, otherwise false.
 func (item Item[T]) IsInConflictWith(other *Item[T]) bool {
 	if other == nil {
 		return false
@@ -147,10 +178,25 @@ func (item Item[T]) IsInConflictWith(other *Item[T]) bool {
 	return true
 }
 
+// RhsAt returns the right hand side at the given position.
+//
+// Parameters:
+//   - pos: The position.
+//
+// Returns:
+//   - T: The right hand side.
+//   - bool: True if the right hand side exists, otherwise false.
 func (item Item[T]) RhsAt(pos int) (T, bool) {
 	return item.rule.RhsAt(pos)
 }
 
+// AppendLookahead appends the given lookahead set to the item.
+//
+// Parameters:
+//   - ls: The lookahead set.
+//
+// Returns:
+//   - error: An error if the lookahead set is nil.
 func (item *Item[T]) AppendLookahead(ls *gccmp.Set[T]) error {
 	if ls == nil {
 		return gcers.NewErrNilParameter("ls")
@@ -163,6 +209,14 @@ func (item *Item[T]) AppendLookahead(ls *gccmp.Set[T]) error {
 	return nil
 }
 
+// LookaheadAt returns the lookahead set at the given position.
+//
+// Parameters:
+//   - pos: The position.
+//
+// Returns:
+//   - *gccmp.Set[T]: The lookahead set.
+//   - bool: True if the lookahead set exists, otherwise false.
 func (item Item[T]) LookaheadAt(pos int) (*gccmp.Set[T], bool) {
 	if pos < 0 || pos >= len(item.lookaheads) {
 		return nil, false

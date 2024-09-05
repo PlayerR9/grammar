@@ -4,31 +4,52 @@ import (
 	"fmt"
 
 	utst "github.com/PlayerR9/go-commons/cmp"
-	gcers "github.com/PlayerR9/go-commons/errors"
 	gcslc "github.com/PlayerR9/go-commons/slices"
 	dbg "github.com/PlayerR9/go-debug/assert"
+	gr "github.com/PlayerR9/grammar/grammar"
 	internal "github.com/PlayerR9/grammar/internal"
 )
 
-type Decider[T internal.TokenTyper] struct {
-	p         *ActiveParser[T]
+// decider is the decider of the active parser.
+type decider[T internal.TokenTyper] struct {
+	// p is the active parser.
+	p *ActiveParser[T]
+
+	// item_list is the list of items.
 	item_list []*Item[T]
-	err       error
+
+	// err is the reason to why the active parser has failed. Nil if it has succeded.
+	err error
 }
 
-func NewDecider[T internal.TokenTyper](p *ActiveParser[T], item_list []*Item[T]) (*Decider[T], error) {
-	if p == nil {
-		return nil, gcers.NewErrNilParameter("p")
-	}
+// new_decider is a helper function that creates a new decider.
+//
+// Parameters:
+//   - p: The active parser.
+//   - item_list: The list of items.
+//
+// Returns:
+//   - *Decider[T]: The new decider. Never returns nil.
+func new_decider[T internal.TokenTyper](p *ActiveParser[T], item_list []*Item[T]) *decider[T] {
+	dbg.AssertNotNil(p, "p")
 
-	return &Decider[T]{
+	return &decider[T]{
 		p:         p,
 		item_list: item_list,
 		err:       nil,
-	}, nil
+	}
 }
 
-func (d *Decider[T]) FilterLookaheads(indices []int, prev T, top1 *Token[T]) ([]int, []int) {
+// filter_lookaheads is a helper function that filters the lookahead sets.
+//
+// Parameters:
+//   - indices: The indices.
+//   - top1: The top1 token.
+//
+// Returns:
+//   - []int: The filtered indices.
+//   - []int: The solutions.
+func (d *decider[T]) filter_lookaheads(indices []int, top1 *gr.Token[T]) ([]int, []int) {
 	var solutions []int
 
 	la := top1
@@ -70,10 +91,20 @@ func (d *Decider[T]) FilterLookaheads(indices []int, prev T, top1 *Token[T]) ([]
 	return indices, solutions
 }
 
-func (d *Decider[T]) ApplyPopRule(indices []int, prev T, offset int) ([]int, T) {
+// apply_pop_rule is a helper function that applies the pop rule.
+//
+// Parameters:
+//   - indices: The indices.
+//   - prev: The previous token.
+//   - offset: The offset.
+//
+// Returns:
+//   - []int: The new indices.
+//   - T: The new previous token.
+func (d *decider[T]) apply_pop_rule(indices []int, prev T, offset int) ([]int, T) {
 	dbg.AssertThat("offset", dbg.NewOrderedAssert(offset).GreaterThan(0)).Panic()
 
-	top, pop_ok := d.p.Pop()
+	top, pop_ok := d.p.pop()
 
 	expected := utst.NewSet[T]()
 	all_done := true
@@ -96,7 +127,7 @@ func (d *Decider[T]) ApplyPopRule(indices []int, prev T, offset int) ([]int, T) 
 
 	tmp, ok := gcslc.SFSeparateEarly(indices, fn)
 	if !ok {
-		d.err = NewErrUnexpectedToken(&prev, nil, expected.Slice()...)
+		d.err = gr.NewErrUnexpectedToken(&prev, nil, expected.Slice()...)
 	} else {
 		if top != nil {
 			prev = top.Type
@@ -118,7 +149,16 @@ func (d *Decider[T]) ApplyPopRule(indices []int, prev T, offset int) ([]int, T) 
 	return indices, prev
 }
 
-func (d *Decider[T]) Decision(indices []int, prev T) ([]int, error) {
+// decision is a helper function that decides which rule is the next one.
+//
+// Parameters:
+//   - indices: The indices.
+//   - prev: The previous token.
+//
+// Returns:
+//   - []int: The new indices.
+//   - error: The error. Never returns nil.
+func (d *decider[T]) decision(indices []int, prev T) ([]int, error) {
 	if d.err != nil {
 		return nil, d.err
 	}
@@ -153,7 +193,16 @@ func (d *Decider[T]) Decision(indices []int, prev T) ([]int, error) {
 	return indices, nil
 }
 
-func (d Decider[T]) filter_no_prev_items(indices []int, offset int) []int {
+// filter_no_prev_items is a helper function that filters out the items that
+// don't have the previous token.
+//
+// Parameters:
+//   - indices: The indices.
+//   - offset: The offset.
+//
+// Returns:
+//   - []int: The filtered indices.
+func (d decider[T]) filter_no_prev_items(indices []int, offset int) []int {
 	if offset < 1 {
 		return nil
 	}
@@ -168,7 +217,16 @@ func (d Decider[T]) filter_no_prev_items(indices []int, offset int) []int {
 	return gcslc.SliceFilter(indices, fn)
 }
 
-func (d Decider[T]) OnlyLookaheads(indices []int, offset int) bool {
+// only_lookaheads is a helper function that checks whether the indices only
+// contain lookaheads.
+//
+// Parameters:
+//   - indices: The indices.
+//   - offset: The offset.
+//
+// Returns:
+//   - bool: Whether the indices only contain lookaheads.
+func (d decider[T]) only_lookaheads(indices []int, offset int) bool {
 	if offset < 1 {
 		return false
 	}
@@ -180,7 +238,15 @@ func (d Decider[T]) OnlyLookaheads(indices []int, offset int) bool {
 	return len(indices) == len(indices_copy)
 }
 
-func (d Decider[T]) EvaluateSolution(curr T, solutions []int) []internal.ActionType {
+/* // evaluate_solution is a helper function that evaluates the solution.
+//
+// Parameters:
+//   - curr: The current token.
+//   - solutions: The solutions.
+//
+// Returns:
+//   - []internal.ActionType: The evaluated solution.
+func (d decider[T]) evaluate_solution(curr T, solutions []int) []internal.ActionType {
 	var final_sol []internal.ActionType
 
 	for _, sol := range solutions {
@@ -191,3 +257,4 @@ func (d Decider[T]) EvaluateSolution(curr T, solutions []int) []internal.ActionT
 
 	return final_sol
 }
+*/

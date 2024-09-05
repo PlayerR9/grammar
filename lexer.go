@@ -8,6 +8,7 @@ import (
 	gcers "github.com/PlayerR9/go-commons/errors"
 	gcch "github.com/PlayerR9/go-commons/runes"
 	dbg "github.com/PlayerR9/go-debug/assert"
+	gr "github.com/PlayerR9/grammar/grammar"
 	internal "github.com/PlayerR9/grammar/internal"
 )
 
@@ -22,26 +23,46 @@ func init() {
 	NotFound = fmt.Errorf("not found")
 }
 
-type LexOneFunc[T internal.TokenTyper] func(l *Lexer[T]) (*Token[T], error)
+// LexOneFunc is the function that lexes the next token of the lexer.
+//
+// Parameters:
+//   - lexer: The lexer. Assume that lexer is not nil.
+//
+// Returns:
+//   - *grammar.Token: The next token of the lexer.
+//   - error: An error if the lexer encounters an error while lexing the next token.
+type LexOneFunc[T internal.TokenTyper] func(l *Lexer[T]) (*gr.Token[T], error)
 
+// Lexer is the lexer of the grammar.
 type Lexer[T internal.TokenTyper] struct {
+	// scanner is the scanner of the lexer.
 	scanner io.RuneScanner
-	tokens  []*Token[T]
-	fn      LexOneFunc[T]
+
+	// tokens is the tokens of the lexer.
+	tokens []*gr.Token[T]
+
+	// fn is the function that lexes the next token of the lexer.
+	fn LexOneFunc[T]
 }
 
-func NewLexer[T internal.TokenTyper](fn LexOneFunc[T]) Lexer[T] {
+// NewLexer creates a new lexer.
+//
+// Parameters:
+//   - fn: The function that lexes the next token of the lexer.
+//
+// Returns:
+//   - *Lexer[T]: The new lexer.
+//   - error: An error if the lexing function is nil.
+func NewLexer[T internal.TokenTyper](fn LexOneFunc[T]) (*Lexer[T], error) {
 	if fn == nil {
-		fn = func(l *Lexer[T]) (*Token[T], error) {
-			return nil, fmt.Errorf("no lexer function provided")
-		}
+		return nil, gcers.NewErrNilParameter("fn")
 	}
 
-	return Lexer[T]{
+	return &Lexer[T]{
 		scanner: nil,
 		tokens:  nil,
 		fn:      fn,
-	}
+	}, nil
 }
 
 func (l *Lexer[T]) SetInputStream(data []byte) {
@@ -74,11 +95,11 @@ func (l *Lexer[T]) Lex() error {
 	return nil
 }
 
-func (l Lexer[T]) Tokens() []*Token[T] {
-	tokens := make([]*Token[T], len(l.tokens), len(l.tokens)+1)
+func (l Lexer[T]) Tokens() []*gr.Token[T] {
+	tokens := make([]*gr.Token[T], len(l.tokens), len(l.tokens)+1)
 	copy(tokens, l.tokens)
 
-	eof := NewToken(T(0), "", nil)
+	eof := gr.NewToken(T(0), "", nil)
 	tokens = append(tokens, eof)
 
 	for i := 0; i < len(tokens)-1; i++ {

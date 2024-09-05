@@ -3,6 +3,7 @@ package grammar
 import (
 	"io"
 
+	gr "github.com/PlayerR9/grammar/grammar"
 	internal "github.com/PlayerR9/grammar/internal"
 )
 
@@ -13,17 +14,17 @@ type TokenReader[T internal.TokenTyper] interface {
 	// Returns:
 	//   - *Token[T]: The next token.
 	//   - error: An error of type io.EOF if there are no more tokens.
-	ReadToken() (*Token[T], error)
+	ReadToken() (*gr.Token[T], error)
 }
 
 // TokenStream is a token stream.
 type TokenStream[T internal.TokenTyper] struct {
 	// tokens is the token stream.
-	tokens []*Token[T]
+	tokens []*gr.Token[T]
 }
 
 // ReadToken implements the TokenReader interface.
-func (ts *TokenStream[T]) ReadToken() (*Token[T], error) {
+func (ts *TokenStream[T]) ReadToken() (*gr.Token[T], error) {
 	if len(ts.tokens) == 0 {
 		return nil, io.EOF
 	}
@@ -41,9 +42,9 @@ func (ts *TokenStream[T]) ReadToken() (*Token[T], error) {
 //
 // Returns:
 //   - *TokenStream[T]: The new token stream. Never returns nil.
-func NewTokenStream[T internal.TokenTyper](tokens []*Token[T]) *TokenStream[T] {
+func NewTokenStream[T internal.TokenTyper](tokens []*gr.Token[T]) *TokenStream[T] {
 	if tokens == nil {
-		tokens = make([]*Token[T], 0)
+		tokens = make([]*gr.Token[T], 0)
 	}
 
 	return &TokenStream[T]{

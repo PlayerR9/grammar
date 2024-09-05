@@ -7,6 +7,7 @@ import (
 	gcers "github.com/PlayerR9/go-commons/errors"
 	uttr "github.com/PlayerR9/go-commons/tree"
 	dbp "github.com/PlayerR9/go-debug/debug"
+	ast "github.com/PlayerR9/grammar/ast"
 	"github.com/PlayerR9/grammar/internal"
 )
 
@@ -18,8 +19,12 @@ func ParseData[T internal.TokenTyper, N interface {
 	BackwardChild() iter.Seq[N]
 
 	uttr.TreeNoder
-}](lexer Lexer[T], parser *Parser[T], builder *AstBuilder[T, N]) func(data []byte) (*uttr.Tree[N], error) {
-	if parser == nil {
+}](lexer *Lexer[T], parser *Parser[T], builder *ast.AstBuilder[T, N]) func(data []byte) (*uttr.Tree[N], error) {
+	if lexer == nil {
+		return func(data []byte) (*uttr.Tree[N], error) {
+			return nil, gcers.NewErrNilParameter("lexer")
+		}
+	} else if parser == nil {
 		return func(data []byte) (*uttr.Tree[N], error) {
 			return nil, gcers.NewErrNilParameter("parser")
 		}

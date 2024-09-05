@@ -9,6 +9,7 @@ import (
 	"github.com/PlayerR9/go-commons/stack"
 	"github.com/PlayerR9/go-commons/tree"
 	dbg "github.com/PlayerR9/go-debug/assert"
+	gr "github.com/PlayerR9/grammar/grammar"
 	internal "github.com/PlayerR9/grammar/internal"
 )
 
@@ -21,7 +22,7 @@ type ActiveParser[T internal.TokenTyper] struct {
 	reader TokenReader[T]
 
 	// token_stack is the token token_stack.
-	token_stack *stack.RefusableStack[*Token[T]]
+	token_stack *stack.RefusableStack[*gr.Token[T]]
 
 	// history is the history of the parser.
 	history *History[T]
@@ -30,7 +31,7 @@ type ActiveParser[T internal.TokenTyper] struct {
 	err error
 }
 
-// NewActiveParser creates a new active parser.
+// new_active_parser creates a new active parser.
 //
 // Parameters:
 //   - global: The shared information between active parsers.
@@ -38,16 +39,15 @@ type ActiveParser[T internal.TokenTyper] struct {
 //
 // Returns:
 //   - *ActiveParser: The new active parser.
-//
-// Panic with an error of type *pkg.Err if 'global' is nil.
-func NewActiveParser[T internal.TokenTyper](global *Parser[T], history *History[T]) (*ActiveParser[T], error) {
+//   - error: An error if 'global' is nil or no tokens are provided.
+func new_active_parser[T internal.TokenTyper](global *Parser[T], history *History[T]) (*ActiveParser[T], error) {
 	if global == nil {
 		return nil, gcers.NewErrNilParameter("global")
 	} else if len(global.tokens) == 0 {
 		return nil, errors.New("no tokens provided")
 	}
 
-	tokens := make([]*Token[T], 0, len(global.tokens))
+	tokens := make([]*gr.Token[T], 0, len(global.tokens))
 	for i := 0; i < len(global.tokens); i++ {
 		tokens = append(tokens, global.tokens[i].Copy())
 	}
@@ -63,30 +63,37 @@ func NewActiveParser[T internal.TokenTyper](global *Parser[T], history *History[
 	return &ActiveParser[T]{
 		global:      global,
 		reader:      NewTokenStream(tokens),
-		token_stack: stack.NewRefusableStack[*Token[T]](),
+		token_stack: stack.NewRefusableStack[*gr.Token[T]](),
 		history:     history,
 		err:         nil,
 	}, nil
 }
 
-// Pop pops a token from the stack.
+// pop pops a token from the stack.
 //
 // Returns:
 //   - *Token[T]: The popped token.
 //   - bool: True if the token was popped, false otherwise.
-func (ap *ActiveParser[T]) Pop() (*Token[T], bool) {
+func (ap *ActiveParser[T]) pop() (*gr.Token[T], bool) {
 	return ap.token_stack.Pop()
 }
 
-func (ap ActiveParser[T]) IsDone() bool {
-	return ap.token_stack.IsEmpty()
-}
-
-func (ap *ActiveParser[T]) CanWalk() bool {
+// can_walk checks if the active parser can walk.
+//
+// Returns:
+//   - bool: True if the active parser can walk, false otherwise.
+func (ap *ActiveParser[T]) can_walk() bool {
 	return ap.history.CanWalk()
 }
 
-func (ap *ActiveParser[T]) Walk(decision_err error) bool {
+// walk walks the active parser.
+//
+// Parameters:
+//   - decision_err: The decision error.
+//
+// Returns:
+//   - bool: True if the walk is an accept action, false otherwise.
+func (ap *ActiveParser[T]) walk(decision_err error) bool {
 	var ok bool
 
 	fn := func(item *Item[T]) error {
@@ -110,13 +117,11 @@ func (ap *ActiveParser[T]) Walk(decision_err error) bool {
 	return ok
 }
 
-// Exec executes the active parser.
+// exec executes the active parser.
 //
 // Returns:
-//   - *sdslices.Slice[*sdt.Wrap[*ActiveParser[T]]]: The possible paths. Never returns nil.
-//
-// Panic if the active parser fails.
-func (ap *ActiveParser[T]) Exec() []*ActiveParser[T] {
+//   - []*ActiveParser[T]: The possible paths.
+func (ap *ActiveParser[T]) exec() []*ActiveParser[T] {
 	var possible_paths []*ActiveParser[T]
 
 	for {
@@ -144,16 +149,16 @@ func (ap *ActiveParser[T]) Exec() []*ActiveParser[T] {
 				new_history := original_history.Copy()
 				new_history.AddEvent(item)
 
-				new_active, err := NewActiveParser(ap.global, new_history)
+				new_active, err := new_active_parser(ap.global, new_history)
 				dbg.AssertErr(err, "NewActiveParser(ap.global, new_history)")
 
 				possible_paths = append(possible_paths, new_active)
 			}
 		}
 
-		dbg.AssertOk(ap.CanWalk(), "p.CanWalk()")
+		dbg.AssertOk(ap.can_walk(), "p.CanWalk()")
 
-		is_accept := ap.Walk(decision_err)
+		is_accept := ap.walk(decision_err)
 		if ap.HasError() {
 			return possible_paths
 		}
@@ -172,13 +177,11 @@ func (ap *ActiveParser[T]) Exec() []*ActiveParser[T] {
 	return possible_paths
 }
 
-// ExecWithFn executes the active parser with a custom decision function.
+// exec_witn_fn executes the active parser with a custom decision function.
 //
 // Returns:
-//   - *sdslices.Slice[*sdt.Wrap[*ActiveParser[T]]]: The possible paths. Never returns nil.
-//
-// Panic if the active parser fails.
-func (ap *ActiveParser[T]) ExecWithFn() []*ActiveParser[T] {
+//   - []*ActiveParser[T]: The possible paths.
+func (ap *ActiveParser[T]) exec_witn_fn() []*ActiveParser[T] {
 	var possible_paths []*ActiveParser[T]
 
 	for {
@@ -208,16 +211,16 @@ func (ap *ActiveParser[T]) ExecWithFn() []*ActiveParser[T] {
 				new_history := original_history.Copy()
 				new_history.AddEvent(item)
 
-				new_active, err := NewActiveParser(ap.global, new_history)
+				new_active, err := new_active_parser(ap.global, new_history)
 				dbg.AssertErr(err, "NewActiveParser(ap.global, new_history)")
 
 				possible_paths = append(possible_paths, new_active)
 			}
 		}
 
-		dbg.AssertOk(ap.CanWalk(), "p.CanWalk()")
+		dbg.AssertOk(ap.can_walk(), "p.CanWalk()")
 
-		is_accept := ap.Walk(decision_err)
+		is_accept := ap.walk(decision_err)
 		if ap.HasError() {
 			return possible_paths
 		}
@@ -236,24 +239,21 @@ func (ap *ActiveParser[T]) ExecWithFn() []*ActiveParser[T] {
 	return possible_paths
 }
 
-func (ap *ActiveParser[T]) WalkAll() bool {
+// walk_all walks the active parser.
+func (ap *ActiveParser[T]) walk_all() {
 	err := ap.shift() // initial shift
 	if err != nil {
 		ap.err = NewErrParsing(err, nil)
 
-		return false
+		return
 	}
 
-	for ap.CanWalk() {
-		is_accept := ap.Walk(nil)
-		if ap.HasError() {
-			return false
-		} else if is_accept {
-			return true
+	for ap.can_walk() {
+		is_accept := ap.walk(nil)
+		if ap.HasError() || is_accept {
+			break
 		}
 	}
-
-	return true
 }
 
 // reduce is a helper function that reduces the stack.
@@ -265,18 +265,16 @@ func (ap *ActiveParser[T]) WalkAll() bool {
 // Returns:
 //   - error: An error of type *ErrUnexpectedToken if any.
 func (ap *ActiveParser[T]) reduce(rule *Rule[T]) error {
-	if rule == nil {
-		return fmt.Errorf("no rule provided")
-	}
+	dbg.AssertNotNil(rule, "rule")
 
 	var prev *T
 
 	for rhs := range rule.Backwards() {
 		top, ok := ap.token_stack.Pop()
 		if !ok {
-			return NewErrUnexpectedToken(prev, nil, rhs)
+			return gr.NewErrUnexpectedToken(prev, nil, rhs)
 		} else if top.Type != rhs {
-			return NewErrUnexpectedToken(prev, &top.Type, rhs)
+			return gr.NewErrUnexpectedToken(prev, &top.Type, rhs)
 		}
 
 		prev = &top.Type
@@ -286,7 +284,7 @@ func (ap *ActiveParser[T]) reduce(rule *Rule[T]) error {
 
 	ap.token_stack.Accept()
 
-	tk := NewToken(rule.Lhs(), "", popped[len(popped)-1].Lookahead)
+	tk := gr.NewToken(rule.Lhs(), "", popped[len(popped)-1].Lookahead)
 	tk.AddChildren(popped)
 
 	ap.token_stack.Push(tk)
@@ -309,6 +307,11 @@ func (ap *ActiveParser[T]) shift() error {
 	return nil
 }
 
+// apply is a helper function that applies the action to the stack.
+//
+// Returns:
+//   - bool: True if the parse was accepted, false otherwise.
+//   - error: An error if any.
 func (ap *ActiveParser[T]) apply(decision_err error, item *Item[T]) (bool, error) {
 	dbg.AssertNotNil(item, "item")
 
@@ -347,9 +350,9 @@ func (ap *ActiveParser[T]) apply(decision_err error, item *Item[T]) (bool, error
 // Forest returns the tree that were parsed.
 //
 // Returns:
-//   - []*uttr.Tree[*Token[T]]: The forest.
-func (ap ActiveParser[T]) Forest() []*tree.Tree[*Token[T]] {
-	var forest []*tree.Tree[*Token[T]]
+//   - []*uttr.Tree[*grammar.Token[T]]: The forest.
+func (ap ActiveParser[T]) Forest() []*tree.Tree[*gr.Token[T]] {
+	var forest []*tree.Tree[*gr.Token[T]]
 
 	for {
 		top, ok := ap.token_stack.Pop()

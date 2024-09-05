@@ -1,4 +1,4 @@
-package grammar
+package ast
 
 import (
 	"fmt"
@@ -6,25 +6,40 @@ import (
 
 	gcers "github.com/PlayerR9/go-commons/errors"
 	uttr "github.com/PlayerR9/go-commons/tree"
+	gr "github.com/PlayerR9/grammar/grammar"
 	internal "github.com/PlayerR9/grammar/internal"
 )
 
+// ToAstFunc is a function that converts a token to an AST node.
+//
+// Parameters:
+//   - tk: The token. Assume tk is not nil.
+//
+// Returns:
+//   - N: The AST node.
+//   - error: An error if the function failed.
 type ToAstFunc[T internal.TokenTyper, N interface {
 	Child() iter.Seq[N]
 	BackwardChild() iter.Seq[N]
 
 	uttr.TreeNoder
-}] func(tk *Token[T]) (N, error)
+}] func(tk *gr.Token[T]) (N, error)
 
+// AstBuilder is an AST builder.
 type AstBuilder[T internal.TokenTyper, N interface {
 	Child() iter.Seq[N]
 	BackwardChild() iter.Seq[N]
 
 	uttr.TreeNoder
 }] struct {
+	// table is the table of the AST builder.
 	table map[T]ToAstFunc[T, N]
 }
 
+// NewAstBuilder creates a new AST builder.
+//
+// Returns:
+//   - *AstBuilder[T, N]: The new AST builder. Never returns nil.
 func NewAstBuilder[T internal.TokenTyper, N interface {
 	Child() iter.Seq[N]
 	BackwardChild() iter.Seq[N]
@@ -36,6 +51,14 @@ func NewAstBuilder[T internal.TokenTyper, N interface {
 	}
 }
 
+// Register registers a function to convert a token to an AST node.
+//
+// Parameters:
+//   - type_: The type of the token.
+//   - fn: The function to convert a token to an AST node.
+//
+// It ignores the function if it is nil and when multiple types are registered
+// the previous one will be overwritten.
 func (b *AstBuilder[T, N]) Register(type_ T, fn ToAstFunc[T, N]) {
 	if fn == nil {
 		return
@@ -44,7 +67,16 @@ func (b *AstBuilder[T, N]) Register(type_ T, fn ToAstFunc[T, N]) {
 	b.table[type_] = fn
 }
 
-func (b *AstBuilder[T, N]) Build(root *Token[T]) (N, error) {
+// Build builds an AST from a token. This function is an helper function that is
+// used within the registered functions.
+//
+// Parameters:
+//   - root: The root of the parse tree.
+//
+// Returns:
+//   - N: The AST node.
+//   - error: An error if the function failed.
+func (b *AstBuilder[T, N]) Build(root *gr.Token[T]) (N, error) {
 	if root == nil {
 		return *new(N), gcers.NewErrNilParameter("root")
 	}
@@ -62,7 +94,15 @@ func (b *AstBuilder[T, N]) Build(root *Token[T]) (N, error) {
 	return node, nil
 }
 
-func (b *AstBuilder[T, N]) Make(tree *uttr.Tree[*Token[T]]) (*uttr.Tree[N], error) {
+// Make creates an AST from a tree.
+//
+// Parameters:
+//   - tree: The tree to create the AST from.
+//
+// Returns:
+//   - *tree.Tree[N]: The AST.
+//   - error: An error if the function failed.
+func (b *AstBuilder[T, N]) Make(tree *uttr.Tree[*gr.Token[T]]) (*uttr.Tree[N], error) {
 	if tree == nil {
 		return nil, gcers.NewErrNilParameter("tree")
 	}
@@ -88,16 +128,14 @@ func (b *AstBuilder[T, N]) Make(tree *uttr.Tree[*Token[T]]) (*uttr.Tree[N], erro
 //   - f: The function that builds the AST.
 //
 // Returns:
-//   - []N: The AST.
+//   - []N: The extracted nodes.
 //   - error: An error if any.
-//
-// Panics if the function fails.
 func LhsAst[T internal.TokenTyper, N interface {
 	Child() iter.Seq[N]
 	BackwardChild() iter.Seq[N]
 
 	uttr.TreeNoder
-}](root *Token[T], lhs T, f func(children []*Token[T]) ([]N, error)) ([]N, error) {
+}](root *gr.Token[T], lhs T, f func(children []*gr.Token[T]) ([]N, error)) ([]N, error) {
 	if root == nil {
 		return nil, gcers.NewErrNilParameter("root")
 	} else if root.Type != lhs {
@@ -112,7 +150,7 @@ func LhsAst[T internal.TokenTyper, N interface {
 			return nil, NewErrIn(lhs, fmt.Errorf("expected at least 1 child, got 0 instead"))
 		}
 
-		var sub_children []*Token[T]
+		var sub_children []*gr.Token[T]
 
 		if children[len(children)-1].Type == lhs {
 			root = children[len(children)-1]

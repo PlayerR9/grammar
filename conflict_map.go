@@ -4,19 +4,26 @@ import (
 	"iter"
 
 	"github.com/PlayerR9/go-commons/set"
-	internal "github.com/PlayerR9/grammar/internal"
+	"github.com/PlayerR9/grammar/internal"
 )
 
+// ConflictMap is the conflict map.
 type ConflictMap[T internal.TokenTyper] struct {
+	// table is the conflict map.
 	table map[T]*set.Set[*Item[T]]
 }
 
+// NewConflictMap creates a new conflict map.
+//
+// Returns:
+//   - *ConflictMap[T]: The new conflict map. Never returns nil.
 func NewConflictMap[T internal.TokenTyper]() *ConflictMap[T] {
 	return &ConflictMap[T]{
 		table: make(map[T]*set.Set[*Item[T]]),
 	}
 }
 
+// Cleanup cleans up the conflict map for the garbage collector.
 func (cm *ConflictMap[T]) Cleanup() {
 	if len(cm.table) == 0 {
 		return
@@ -31,6 +38,7 @@ func (cm *ConflictMap[T]) Cleanup() {
 	cm.table = nil
 }
 
+// Reset resets the conflict map.
 func (cm *ConflictMap[T]) Reset() {
 	if cm.table == nil {
 		cm.table = make(map[T]*set.Set[*Item[T]])
@@ -43,6 +51,13 @@ func (cm *ConflictMap[T]) Reset() {
 	}
 }
 
+// conflicting_items is a helper function that returns the conflicting items.
+//
+// Parameters:
+//   - items: The items.
+//
+// Returns:
+//   - *set.Set[*Item[T]]: The conflicting items.
 func conflicting_items[T internal.TokenTyper](items []*Item[T]) *set.Set[*Item[T]] {
 	if len(items) < 2 {
 		return nil
@@ -83,6 +98,10 @@ func conflicting_items[T internal.TokenTyper](items []*Item[T]) *set.Set[*Item[T
 	return conflicts
 }
 
+// Init initializes the conflict map.
+//
+// Parameters:
+//   - items: The items.
 func (cm *ConflictMap[T]) Init(items map[T][]*Item[T]) {
 	if len(items) == 0 {
 		return
@@ -100,6 +119,11 @@ func (cm *ConflictMap[T]) Init(items map[T][]*Item[T]) {
 	}
 }
 
+// Entry returns an iterator over the conflict map where the key is the token symbol
+// and the value is the conflicting items.
+//
+// Returns:
+//   - iter.Seq2[T, *Item[T]]: The iterator. Never returns nil.
 func (cm ConflictMap[T]) Entry() iter.Seq2[T, *Item[T]] {
 	fn := func(yield func(T, *Item[T]) bool) {
 		for s, items := range cm.table {
@@ -114,6 +138,11 @@ func (cm ConflictMap[T]) Entry() iter.Seq2[T, *Item[T]] {
 	return fn
 }
 
+// All returns an iterator over the conflict map where the key is the token symbol
+// and the value is an iterator over the conflicting items.
+//
+// Returns:
+//   - iter.Seq2[T, iter.Seq[*Item[T]]]: The iterator. Never returns nil.
 func (cm ConflictMap[T]) All() iter.Seq2[T, iter.Seq[*Item[T]]] {
 	fn := func(yield func(T, iter.Seq[*Item[T]]) bool) {
 		for s, items := range cm.table {
@@ -135,6 +164,10 @@ func (cm ConflictMap[T]) All() iter.Seq2[T, iter.Seq[*Item[T]]] {
 	return fn
 }
 
+// Len returns the number of items in the conflict map.
+//
+// Returns:
+//   - int: The number of items in the conflict map.
 func (cm ConflictMap[T]) Len() int {
 	return len(cm.table)
 }
