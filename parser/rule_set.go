@@ -1,4 +1,4 @@
-package grammar
+package parser
 
 import (
 	"fmt"
@@ -7,7 +7,7 @@ import (
 
 	utst "github.com/PlayerR9/go-commons/cmp"
 	dbg "github.com/PlayerR9/go-debug/assert"
-	internal "github.com/PlayerR9/grammar/internal"
+	"github.com/PlayerR9/grammar/internal"
 )
 
 // RuleSet is the rule set data structure.

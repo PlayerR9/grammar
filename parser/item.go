@@ -1,4 +1,4 @@
-package grammar
+package parser
 
 import (
 	"iter"
@@ -8,7 +8,7 @@ import (
 	gcers "github.com/PlayerR9/go-commons/errors"
 	gcint "github.com/PlayerR9/go-commons/ints"
 	dbg "github.com/PlayerR9/go-debug/assert"
-	internal "github.com/PlayerR9/grammar/internal"
+	"github.com/PlayerR9/grammar/internal"
 )
 
 // Item is an item in the parsing table.

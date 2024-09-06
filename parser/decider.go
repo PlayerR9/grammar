@@ -1,4 +1,4 @@
-package grammar
+package parser
 
 import (
 	"fmt"
@@ -7,7 +7,7 @@ import (
 	gcslc "github.com/PlayerR9/go-commons/slices"
 	dbg "github.com/PlayerR9/go-debug/assert"
 	gr "github.com/PlayerR9/grammar/grammar"
-	internal "github.com/PlayerR9/grammar/internal"
+	"github.com/PlayerR9/grammar/internal"
 )
 
 // decider is the decider of the active parser.

@@ -1,14 +1,14 @@
-package grammar
+package parser
 
 import (
 	"iter"
 
+	util "github.com/PlayerR9/go-commons/backup"
 	gcers "github.com/PlayerR9/go-commons/errors"
 	"github.com/PlayerR9/go-commons/stack"
 	dbg "github.com/PlayerR9/go-debug/assert"
 	gr "github.com/PlayerR9/grammar/grammar"
-	internal "github.com/PlayerR9/grammar/internal"
-	util "github.com/PlayerR9/grammar/util/backup"
+	"github.com/PlayerR9/grammar/internal"
 )
 
 // DecisionFn is the decision function.
@@ -101,7 +101,7 @@ func (p *Parser[T]) active_parser_of() *ActiveParser[T] {
 
 	new_ap := &ActiveParser[T]{
 		global:         p,
-		reader:         NewTokenStream(tokens),
+		reader:         gr.NewTokenStream(tokens),
 		token_stack:    stack.NewRefusableStack[*gr.Token[T]](),
 		err:            nil,
 		possible_cause: nil,

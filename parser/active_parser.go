@@ -1,4 +1,4 @@
-package grammar
+package parser
 
 import (
 	"errors"
@@ -18,7 +18,7 @@ type ActiveParser[T internal.TokenTyper] struct {
 	global *Parser[T]
 
 	// reader is the token reader.
-	reader TokenReader[T]
+	reader gr.TokenReader[T]
 
 	// token_stack is the token token_stack.
 	token_stack *stack.RefusableStack[*gr.Token[T]]

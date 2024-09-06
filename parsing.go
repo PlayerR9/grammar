@@ -10,6 +10,7 @@ import (
 	ast "github.com/PlayerR9/grammar/ast"
 	"github.com/PlayerR9/grammar/internal"
 	lxr "github.com/PlayerR9/grammar/lexer"
+	prx "github.com/PlayerR9/grammar/parser"
 )
 
 // DebugSetting is the debug setting.
@@ -69,7 +70,7 @@ func ParseData[T internal.TokenTyper, N interface {
 	BackwardChild() iter.Seq[N]
 
 	uttr.TreeNoder
-}](lexer *lxr.Lexer[T], parser *Parser[T], builder *ast.AstBuilder[T, N]) (ParsingFunc[N], error) {
+}](lexer *lxr.Lexer[T], parser *prx.Parser[T], builder *ast.AstBuilder[T, N]) (ParsingFunc[N], error) {
 	if lexer == nil {
 		return nil, gcers.NewErrNilParameter("lexer")
 	} else if parser == nil {
