@@ -2,7 +2,7 @@ package main
 
 import (
 	ggen "github.com/PlayerR9/go-generator/generator"
-	pkg "github.com/PlayerR9/grammar/cmd/pkg"
+	pkg "github.com/PlayerR9/grammar/OLD/cmd/pkg"
 )
 
 func main() {

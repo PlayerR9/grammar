@@ -288,5 +288,5 @@ func SplitIntoGroups[T any](elems []T, count int) (map[int][]T, error) {
 		groups[group_id] = append(groups[group_id], e)
 	}
 
-	return groups
+	return groups, nil
 }
