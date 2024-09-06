@@ -2,6 +2,7 @@ package lexer
 
 import (
 	"fmt"
+	"io"
 
 	gr "github.com/PlayerR9/grammar/grammar"
 
@@ -81,23 +82,23 @@ func (b Builder[T]) Build() *Lexer[T] {
 	var fn LexOnceFunc[T]
 
 	if b.table == nil {
-		fn = func(lexer *Lexer[T]) (*gr.Token[T], error) {
+		fn = func(lexer *ActiveLexer[T]) ([]*gr.Token[T], error) {
 			dbg.AssertNotNil(lexer, "l")
 
-			char, err := lexer.PeekRune()
-			if err != nil {
-				return nil, err
+			char, ok := lexer.PeekRune()
+			if !ok {
+				return nil, io.EOF
 			}
 
 			return nil, fmt.Errorf("unknown character: %q", string(char))
 		}
 	} else if b.def_case == nil {
-		fn = func(lexer *Lexer[T]) (*gr.Token[T], error) {
+		fn = func(lexer *ActiveLexer[T]) ([]*gr.Token[T], error) {
 			dbg.AssertNotNil(lexer, "l")
 
-			char, err := lexer.PeekRune()
-			if err != nil {
-				return nil, err
+			char, ok := lexer.PeekRune()
+			if !ok {
+				return nil, io.EOF
 			}
 
 			rule, ok := b.table[char]
@@ -110,17 +111,17 @@ func (b Builder[T]) Build() *Lexer[T] {
 				return nil, err
 			}
 
-			return tk, nil
+			return []*gr.Token[T]{tk}, nil
 		}
 	} else {
 		def_case := b.def_case
 
-		fn = func(lexer *Lexer[T]) (*gr.Token[T], error) {
+		fn = func(lexer *ActiveLexer[T]) ([]*gr.Token[T], error) {
 			dbg.AssertNotNil(lexer, "l")
 
-			char, err := lexer.PeekRune()
-			if err != nil {
-				return nil, err
+			char, ok := lexer.PeekRune()
+			if !ok {
+				return nil, io.EOF
 			}
 
 			rule, ok := b.table[char]
@@ -138,7 +139,7 @@ func (b Builder[T]) Build() *Lexer[T] {
 				return nil, err
 			}
 
-			return tk, nil
+			return []*gr.Token[T]{tk}, nil
 		}
 	}
 

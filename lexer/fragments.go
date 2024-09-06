@@ -2,28 +2,12 @@ package lexer
 
 import (
 	"fmt"
-	"io"
 	"strings"
 
 	gcers "github.com/PlayerR9/go-commons/errors"
 	dbg "github.com/PlayerR9/go-debug/assert"
 	internal "github.com/PlayerR9/grammar/internal"
 )
-
-// LexFunc is the lexing function.
-//
-// Parameters:
-//   - lexer: The lexer.
-//
-// Returns:
-//   - string: The group of characters.
-//   - error: An error if any.
-//
-// Errors:
-//   - NotFound: When the group cannot be found because it doesn't exist in the text.
-//   - errors.ErrInvalidParameter: If lexer is nil.
-//   - any other error returned by lexer.NextRune() function or the text is invalid.
-type LexFunc[T internal.TokenTyper] func(lexer *Lexer[T]) (string, error)
 
 // LexGroup is a helper function for lexing a group of characters that satisfy a given predicate according
 // to the following rule:
@@ -42,23 +26,21 @@ type LexFunc[T internal.TokenTyper] func(lexer *Lexer[T]) (string, error)
 //   - NotFound: When the group cannot be found because it doesn't exist in the text.
 //   - errors.ErrInvalidParameter: If is_func or l is nil.
 //   - any other error returned by l.NextRune() function.
-func LexGroup[T internal.TokenTyper](lexer *Lexer[T], is_func func(c rune) bool) (string, error) {
+func LexGroup[T internal.TokenTyper](lexer *ActiveLexer[T], is_func func(c rune) bool) (string, error) {
 	if lexer == nil {
 		return "", gcers.NewErrNilParameter("lexer")
 	} else if is_func == nil {
 		return "", gcers.NewErrNilParameter("is_func")
 	}
 
-	c, err := lexer.NextRune()
-	if err == io.EOF {
+	c, ok := lexer.NextRune()
+	if !ok {
 		return "", NotFound
-	} else if err != nil {
-		return "", err
 	}
 
 	if !is_func(c) {
-		err := lexer.RefuseRune()
-		dbg.AssertErr(err, "l.RefuseRune()")
+		ok := lexer.RefuseRune()
+		dbg.AssertOk(ok, "lexer.RefuseRune()")
 
 		return "", NotFound
 	}
@@ -67,19 +49,14 @@ func LexGroup[T internal.TokenTyper](lexer *Lexer[T], is_func func(c rune) bool)
 	builder.WriteRune(c)
 
 	for {
-		c, err := lexer.NextRune()
-		if err == io.EOF {
+		c, ok := lexer.NextRune()
+		if !ok {
 			break
-		} else if err != nil {
-			tmp := lexer.RefuseRune()
-			dbg.AssertErr(tmp, "l.RefuseRune()")
-
-			return "", err
 		}
 
 		if !is_func(c) {
-			err := lexer.RefuseRune()
-			dbg.AssertErr(err, "l.RefuseRune()")
+			ok := lexer.RefuseRune()
+			dbg.AssertOk(ok, "lexer.RefuseRune()")
 
 			break
 		}
@@ -106,7 +83,7 @@ func LexGroup[T internal.TokenTyper](lexer *Lexer[T], is_func func(c rune) bool)
 //   - NotFound: When the group cannot be found because it doesn't exist in the text.
 //   - errors.ErrInvalidParameter: If lexer or lex_func is nil.
 //   - any other error returned by lex_func.
-func LexAtLeastOne[T internal.TokenTyper](lexer *Lexer[T], lex_func LexFunc[T]) (string, error) {
+func LexAtLeastOne[T internal.TokenTyper](lexer *ActiveLexer[T], lex_func LexFunc[T]) (string, error) {
 	if lexer == nil {
 		return "", gcers.NewErrNilParameter("lexer")
 	} else if lex_func == nil {
@@ -149,23 +126,21 @@ func LexAtLeastOne[T internal.TokenTyper](lexer *Lexer[T], lex_func LexFunc[T]) 
 //   - NotFound: If the literal is not found.
 //   - *gcers.ErrInvalidParameter: If the lexer is nil or the chars is empty.
 //   - error: any other error.
-func FragLiteral[T internal.TokenTyper](lexer *Lexer[T], chars []rune) (string, error) {
+func FragLiteral[T internal.TokenTyper](lexer *ActiveLexer[T], chars []rune) (string, error) {
 	if lexer == nil {
 		return "", gcers.NewErrNilParameter("lexer")
 	} else if len(chars) == 0 {
 		return "", gcers.NewErrInvalidParameter("chars", gcers.NewErrEmpty(chars))
 	}
 
-	char, err := lexer.NextRune()
-	if err == io.EOF {
+	char, ok := lexer.NextRune()
+	if !ok {
 		return "", NotFound
-	} else if err != nil {
-		return "", err
 	}
 
 	if char != chars[0] {
-		err := lexer.RefuseRune()
-		dbg.AssertErr(err, "l.RefuseRune()")
+		ok := lexer.RefuseRune()
+		dbg.AssertOk(ok, "lexer.RefuseRune()")
 
 		return "", NotFound
 	}
@@ -174,19 +149,10 @@ func FragLiteral[T internal.TokenTyper](lexer *Lexer[T], chars []rune) (string, 
 	builder.WriteRune(char)
 
 	for i := 1; i < len(chars); i++ {
-		c, err := lexer.NextRune()
-		if err != nil {
-			err := lexer.RefuseRune()
-			dbg.AssertErr(err, "l.RefuseRune()")
-		}
-
-		if err == io.EOF {
+		c, ok := lexer.NextRune()
+		if !ok {
 			return builder.String(), fmt.Errorf("expected %q after %q, got nothing instead", chars[i], builder.String())
-		} else if err != nil {
-			return builder.String(), err
-		}
-
-		if c != chars[i] {
+		} else if c != chars[i] {
 			return builder.String(), fmt.Errorf("expected %q after %q, got %q instead", chars[i], builder.String(), c)
 		}
 
@@ -209,45 +175,36 @@ func FragLiteral[T internal.TokenTyper](lexer *Lexer[T], chars []rune) (string, 
 //   - NotFound: If the newline is not found.
 //   - *gcers.ErrInvalidParameter: If the lexer is nil.
 //   - error: any other error.
-func FragNewline[T internal.TokenTyper](l *Lexer[T]) (string, error) {
-	if l == nil {
+func FragNewline[T internal.TokenTyper](lexer *ActiveLexer[T]) (string, error) {
+	if lexer == nil {
 		return "", gcers.NewErrNilParameter("l")
 	}
 
-	c, err := l.NextRune()
-	if err == io.EOF {
+	c, ok := lexer.NextRune()
+	if !ok {
 		return "", NotFound
-	} else if err != nil {
-		return "", err
 	}
 
 	switch c {
 	case '\n':
 		return "\n", nil
 	case '\r':
-		next_c, err := l.NextRune()
-		if err != nil {
-			err := l.RefuseRune()
-			dbg.AssertErr(err, "l.RefuseRune()")
-		}
-
-		if err == io.EOF {
+		next_c, ok := lexer.NextRune()
+		if !ok {
 			return "", fmt.Errorf("expected %q after %q, got nothing instead", '\n', '\r')
-		} else if err != nil {
-			return "", err
 		}
 
 		if next_c != '\n' {
-			err := l.RefuseRune()
-			dbg.AssertErr(err, "l.RefuseRune()")
+			ok := lexer.RefuseRune()
+			dbg.AssertOk(ok, "lexer.RefuseRune()")
 
 			return "", fmt.Errorf("expected %q after %q, got %q instead", '\n', '\r', next_c)
 		}
 
 		return "\n", nil
 	default:
-		err := l.RefuseRune()
-		dbg.AssertErr(err, "l.RefuseRune()")
+		ok := lexer.RefuseRune()
+		dbg.AssertOk(ok, "lexer.RefuseRune()")
 
 		return "", NotFound
 	}

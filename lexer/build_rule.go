@@ -62,7 +62,7 @@ func new_skip_build_rule[T internal.TokenTyper](fn LexFunc[T]) *build_rule[T] {
 // Returns:
 //   - *gr.Token[T]: The new token if the rule is not a skip rule. Nil otherwise.
 //   - error: An error if the rule failed.
-func (r build_rule[T]) apply(lexer *Lexer[T]) (*gr.Token[T], error) {
+func (r build_rule[T]) apply(lexer *ActiveLexer[T]) (*gr.Token[T], error) {
 	dbg.AssertNotNil(lexer, "lexer")
 
 	str, err := r.fn(lexer)

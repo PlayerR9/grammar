@@ -2,11 +2,10 @@ package lexer
 
 import (
 	"fmt"
-	"io"
+	"iter"
 
+	gcbk "github.com/PlayerR9/go-commons/backup"
 	gcch "github.com/PlayerR9/go-commons/runes"
-	dbg "github.com/PlayerR9/go-debug/assert"
-	gr "github.com/PlayerR9/grammar/grammar"
 	internal "github.com/PlayerR9/grammar/internal"
 )
 
@@ -21,23 +20,10 @@ func init() {
 	NotFound = fmt.Errorf("not found")
 }
 
-// LexOnceFunc is the function that lexes the next token of the lexer.
-//
-// Parameters:
-//   - lexer: The lexer. Assume that lexer is not nil.
-//
-// Returns:
-//   - *grammar.Token: The next token of the lexer.
-//   - error: An error if the lexer encounters an error while lexing the next token.
-type LexOnceFunc[T internal.TokenTyper] func(lexer *Lexer[T]) (*gr.Token[T], error)
-
 // Lexer is the lexer of the grammar.
 type Lexer[T internal.TokenTyper] struct {
-	// scanner is the scanner of the lexer.
-	scanner io.RuneScanner
-
-	// tokens is the tokens of the lexer.
-	tokens []*gr.Token[T]
+	// data is the scanner of the lexer.
+	data []rune
 
 	// fn is the function that lexes the next token of the lexer.
 	fn LexOnceFunc[T]
@@ -47,94 +33,44 @@ type Lexer[T internal.TokenTyper] struct {
 //
 // Parameters:
 //   - data: The input stream of the lexer.
-func (l *Lexer[T]) SetInputStream(data []byte) {
-	var stream gcch.CharStream
+//
+// Returns:
+//   - error: An error if any.
+func (l *Lexer[T]) SetInputStream(data []byte) error {
+	runes, err := gcch.BytesToUtf8(data)
+	if err != nil {
+		return err
+	}
 
-	stream.Init(data)
+	l.data = runes
 
-	l.scanner = &stream
+	return nil
 }
 
 // Lex lexes tokens in the input stream.
 //
 // Returns:
 //   - error: An error if the lexer encounters an error.
-func (l *Lexer[T]) Lex() error {
-	// Clear previous tokens
-	if len(l.tokens) > 0 {
-		l.tokens = l.tokens[:0]
-	}
-
-	for {
-		tk, err := l.fn(l)
-		if err == io.EOF {
-			break
-		} else if err != nil {
-			return err
+func (l *Lexer[T]) Lex() iter.Seq[*ActiveLexer[T]] {
+	return gcbk.Execute(func() *ActiveLexer[T] {
+		return &ActiveLexer[T]{
+			global: l,
 		}
-
-		if tk != nil {
-			l.tokens = append(l.tokens, tk)
-		}
-	}
-
-	return nil
+	})
 }
 
-// Tokens returns the tokens of the lexer.
+// RuneAt returns the rune at the given position.
+//
+// Parameters:
+//   - pos: The position of the rune.
 //
 // Returns:
-//   - []*grammar.Token: The tokens of the lexer.
-func (l Lexer[T]) Tokens() []*gr.Token[T] {
-	tokens := make([]*gr.Token[T], len(l.tokens), len(l.tokens)+1)
-	copy(tokens, l.tokens)
-
-	eof := gr.NewToken(T(0), "", nil)
-	tokens = append(tokens, eof)
-
-	for i := 0; i < len(tokens)-1; i++ {
-		tokens[i].Lookahead = tokens[i+1]
+//   - rune: The rune.
+//   - bool: True if the rune exists. False otherwise.
+func (l Lexer[T]) RuneAt(pos int) (rune, bool) {
+	if pos < 0 || pos >= len(l.data) {
+		return 0, false
 	}
 
-	return tokens
-}
-
-// PeekRune returns the next rune in the input stream without consuming it.
-//
-// Returns:
-//   - rune: The next rune in the input stream.
-//   - error: An error if any.
-func (l *Lexer[T]) PeekRune() (rune, error) {
-	char, _, err := l.scanner.ReadRune()
-	if err != nil {
-		return '\000', err
-	}
-
-	err = l.scanner.UnreadRune()
-	dbg.AssertErr(err, "l.scanner.UnreadRune()")
-
-	return char, nil
-}
-
-// NextRune returns the next rune in the input stream.
-//
-// Returns:
-//   - rune: The next rune in the input stream.
-//   - error: An error if any.
-func (l *Lexer[T]) NextRune() (rune, error) {
-	char, _, err := l.scanner.ReadRune()
-	if err != nil {
-		return '\000', err
-	}
-
-	return char, nil
-}
-
-// RefuseRune rejects the last read rune in the input stream.
-//
-// Returns:
-//   - error: An error if any.
-func (l *Lexer[T]) RefuseRune() error {
-	err := l.scanner.UnreadRune()
-	return err
+	return l.data[pos], true
 }
