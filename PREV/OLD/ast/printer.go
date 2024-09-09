@@ -4,8 +4,8 @@ import (
 	"iter"
 	"strings"
 
+	dbg "github.com/PlayerR9/go-commons/assert"
 	gcstr "github.com/PlayerR9/go-commons/strings"
-	dbg "github.com/PlayerR9/go-debug/assert"
 )
 
 // AstPrinter is a tree printer.
@@ -60,7 +60,7 @@ func (p *AstPrinter[T]) Apply(node T) ([]TravData[T], error) {
 		return nil, nil
 	} */
 
-	dbg.AssertNotNil(p, "info")
+	// dbg.AssertNotNil(p, "info")
 
 	if p.indent != "" {
 		p.lines.AddString(p.indent)
@@ -124,7 +124,7 @@ func (p *AstPrinter[T]) Apply(node T) ([]TravData[T], error) {
 
 	if len(children) >= 2 {
 		for _, c := range children {
-			data := dbg.AssertConv[*AstPrinter[T]](c.Data, "c.Data")
+			data := dbg.AssertConv[*AstPrinter[T]](c.Data, dbg.NewOther("c.Data"))
 
 			data.same_level = true
 		}
@@ -132,7 +132,7 @@ func (p *AstPrinter[T]) Apply(node T) ([]TravData[T], error) {
 
 	last_child := children[len(children)-1].Data
 
-	tmp := dbg.AssertConv[*AstPrinter[T]](last_child, "last_child")
+	tmp := dbg.AssertConv[*AstPrinter[T]](last_child, dbg.NewOther("last_child"))
 
 	tmp.is_last = true
 

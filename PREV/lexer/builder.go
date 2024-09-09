@@ -6,7 +6,6 @@ import (
 
 	gr "github.com/PlayerR9/grammar/PREV/grammar"
 
-	dbg "github.com/PlayerR9/go-debug/assert"
 	internal "github.com/PlayerR9/grammar/PREV/internal"
 )
 
@@ -83,7 +82,7 @@ func (b Builder[T]) Build() *Lexer[T] {
 
 	if b.table == nil {
 		fn = func(lexer *ActiveLexer[T]) ([]*gr.Token[T], error) {
-			dbg.AssertNotNil(lexer, "l")
+			// dbg.AssertNotNil(lexer, "l")
 
 			char, ok := lexer.PeekRune()
 			if !ok {
@@ -94,7 +93,7 @@ func (b Builder[T]) Build() *Lexer[T] {
 		}
 	} else if b.def_case == nil {
 		fn = func(lexer *ActiveLexer[T]) ([]*gr.Token[T], error) {
-			dbg.AssertNotNil(lexer, "l")
+			// dbg.AssertNotNil(lexer, "l")
 
 			char, ok := lexer.PeekRune()
 			if !ok {
@@ -117,7 +116,7 @@ func (b Builder[T]) Build() *Lexer[T] {
 		def_case := b.def_case
 
 		fn = func(lexer *ActiveLexer[T]) ([]*gr.Token[T], error) {
-			dbg.AssertNotNil(lexer, "l")
+			// dbg.AssertNotNil(lexer, "l")
 
 			char, ok := lexer.PeekRune()
 			if !ok {

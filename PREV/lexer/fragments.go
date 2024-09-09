@@ -5,7 +5,6 @@ import (
 	"strings"
 
 	gcers "github.com/PlayerR9/go-commons/errors"
-	dbg "github.com/PlayerR9/go-debug/assert"
 	internal "github.com/PlayerR9/grammar/PREV/internal"
 )
 
@@ -39,8 +38,8 @@ func LexGroup[T internal.TokenTyper](lexer *ActiveLexer[T], is_func func(c rune)
 	}
 
 	if !is_func(c) {
-		ok := lexer.RefuseRune()
-		dbg.AssertOk(ok, "lexer.RefuseRune()")
+		_ = lexer.RefuseRune()
+		// dbg.AssertOk(ok, "lexer.RefuseRune()")
 
 		return "", NotFound
 	}
@@ -55,8 +54,8 @@ func LexGroup[T internal.TokenTyper](lexer *ActiveLexer[T], is_func func(c rune)
 		}
 
 		if !is_func(c) {
-			ok := lexer.RefuseRune()
-			dbg.AssertOk(ok, "lexer.RefuseRune()")
+			_ = lexer.RefuseRune()
+			// dbg.AssertOk(ok, "lexer.RefuseRune()")
 
 			break
 		}
@@ -139,8 +138,8 @@ func FragLiteral[T internal.TokenTyper](lexer *ActiveLexer[T], chars []rune) (st
 	}
 
 	if char != chars[0] {
-		ok := lexer.RefuseRune()
-		dbg.AssertOk(ok, "lexer.RefuseRune()")
+		_ = lexer.RefuseRune()
+		// dbg.AssertOk(ok, "lexer.RefuseRune()")
 
 		return "", NotFound
 	}
@@ -195,16 +194,16 @@ func FragNewline[T internal.TokenTyper](lexer *ActiveLexer[T]) (string, error) {
 		}
 
 		if next_c != '\n' {
-			ok := lexer.RefuseRune()
-			dbg.AssertOk(ok, "lexer.RefuseRune()")
+			_ = lexer.RefuseRune()
+			// dbg.AssertOk(ok, "lexer.RefuseRune()")
 
 			return "", fmt.Errorf("expected %q after %q, got %q instead", '\n', '\r', next_c)
 		}
 
 		return "\n", nil
 	default:
-		ok := lexer.RefuseRune()
-		dbg.AssertOk(ok, "lexer.RefuseRune()")
+		_ = lexer.RefuseRune()
+		// dbg.AssertOk(ok, "lexer.RefuseRune()")
 
 		return "", NotFound
 	}

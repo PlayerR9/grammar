@@ -3,7 +3,7 @@ package parsing
 import (
 	"strings"
 
-	gr "github.com/PlayerR9/grammar/OLD/grammar"
+	gr "github.com/PlayerR9/grammar/PREV/OLD/grammar"
 )
 
 // Rule is a struct that represents a rule of type S.

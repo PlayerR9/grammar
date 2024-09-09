@@ -5,10 +5,9 @@ import (
 
 	util "github.com/PlayerR9/go-commons/backup"
 	gcers "github.com/PlayerR9/go-commons/errors"
-	"github.com/PlayerR9/go-commons/stack"
-	dbg "github.com/PlayerR9/go-debug/assert"
 	gr "github.com/PlayerR9/grammar/PREV/grammar"
 	"github.com/PlayerR9/grammar/PREV/internal"
+	"github.com/PlayerR9/listlike/stack"
 )
 
 // DecisionFn is the decision function.
@@ -88,7 +87,7 @@ func NewParserWithFunc[T internal.TokenTyper](decision_fn DecisionFn[T]) (*Parse
 //   - *ActiveParser: The new active parser.
 //   - error: An error if shifting the first token failed.
 func (p *Parser[T]) active_parser_of() *ActiveParser[T] {
-	dbg.AssertThat("len(p.tokens)", dbg.NewOrderedAssert(len(p.tokens)).GreaterThan(0)).Panic()
+	// dbg.AssertThat("len(p.tokens)", dbg.NewOrderedAssert(len(p.tokens)).GreaterThan(0)).Panic()
 
 	tokens := make([]*gr.Token[T], 0, len(p.tokens))
 	for i := 0; i < len(p.tokens); i++ {

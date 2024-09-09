@@ -5,11 +5,10 @@ import (
 	"fmt"
 	"slices"
 
-	"github.com/PlayerR9/go-commons/stack"
-	"github.com/PlayerR9/go-commons/tree"
-	dbg "github.com/PlayerR9/go-debug/assert"
 	gr "github.com/PlayerR9/grammar/PREV/grammar"
 	internal "github.com/PlayerR9/grammar/PREV/internal"
+	"github.com/PlayerR9/listlike/stack"
+	"github.com/PlayerR9/tree/tree"
 )
 
 // ActiveParser is the active parser (i.e., the one that is currently parsing).
@@ -49,7 +48,7 @@ func (ap ActiveParser[T]) HasError() bool {
 // Returns:
 //   - bool: True if the action is accepted. False otherwise.
 func (ap *ActiveParser[T]) WalkOne(item *Item[T]) bool {
-	dbg.AssertNotNil(item, "item")
+	// dbg.AssertNotNil(item, "item")
 
 	ap.accept_found = false
 
@@ -210,7 +209,7 @@ func (ap *ActiveParser[T]) exec_witn_fn(history *util.History[*Item[T]]) []*util
 // Returns:
 //   - error: An error of type *ErrUnexpectedToken if any.
 func (ap *ActiveParser[T]) reduce(rule *Rule[T]) error {
-	dbg.AssertNotNil(rule, "rule")
+	// dbg.AssertNotNil(rule, "rule")
 
 	var prev *T
 

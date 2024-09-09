@@ -7,7 +7,6 @@ import (
 	"github.com/PlayerR9/go-commons/cmp"
 	"github.com/PlayerR9/go-commons/queue"
 	"github.com/PlayerR9/go-commons/set"
-	dbg "github.com/PlayerR9/go-debug/assert"
 	"github.com/PlayerR9/grammar/PREV/internal"
 )
 
@@ -34,9 +33,9 @@ type parse_table[T internal.TokenTyper] struct {
 
 // make_symbols is a helper function that makes the symbols set.
 func (pt *parse_table[T]) make_symbols() {
-	dbg.AssertNotNil(pt, "pt")
-	dbg.AssertNotNil(pt.rule_set, "pt.rule_set")
-	dbg.Assert(pt.symbols.IsEmpty(), "symbols is not empty")
+	// dbg.AssertNotNil(pt, "pt")
+	// dbg.AssertNotNil(pt.rule_set, "pt.rule_set")
+	// dbg.Assert(pt.symbols.IsEmpty(), "symbols is not empty")
 
 	for rule := range pt.rule_set.All() {
 		_ = pt.symbols.Add(rule.Lhs())
@@ -46,14 +45,14 @@ func (pt *parse_table[T]) make_symbols() {
 
 // make_items is a helper function that makes the items set.
 func (pt *parse_table[T]) make_items() {
-	dbg.AssertNotNil(pt, "pt")
-	dbg.AssertNotNil(pt.rule_set, "pt.rule_set")
-	dbg.Assert(pt.item_set.IsEmpty(), "item_set is not empty")
+	// dbg.AssertNotNil(pt, "pt")
+	// dbg.AssertNotNil(pt.rule_set, "pt.rule_set")
+	// dbg.Assert(pt.item_set.IsEmpty(), "item_set is not empty")
 
 	for rule := range pt.rule_set.All() {
 		for i := 0; i <= rule.Size(); i++ {
-			item, err := NewItem(rule, i)
-			dbg.AssertErr(err, "NewItem(rule, %d)", i)
+			item, _ := NewItem(rule, i)
+			// dbg.AssertErr(err, "NewItem(rule, %d)", i)
 
 			pt.item_set.Add(item)
 		}
@@ -198,8 +197,8 @@ func (pt *parse_table[T]) make_all_states() error {
 				continue
 			}
 
-			rule, ok = rule.Advance()
-			dbg.AssertOk(ok, "rule.Advance()")
+			rule, _ = rule.Advance()
+			// dbg.AssertOk(ok, "rule.Advance()")
 
 			idx := -1
 

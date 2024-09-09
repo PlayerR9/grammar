@@ -1,7 +1,6 @@
 package lexer
 
 import (
-	dbg "github.com/PlayerR9/go-debug/assert"
 	gr "github.com/PlayerR9/grammar/PREV/grammar"
 	internal "github.com/PlayerR9/grammar/PREV/internal"
 )
@@ -28,7 +27,7 @@ type build_rule[T internal.TokenTyper] struct {
 // Returns:
 //   - *build_rule[T]: The new build rule. Never returns nil.
 func new_build_rule[T internal.TokenTyper](type_ T, is_skip bool, fn LexFunc[T]) *build_rule[T] {
-	dbg.AssertNotNil(fn, "fn")
+	// dbg.AssertNotNil(fn, "fn")
 
 	return &build_rule[T]{
 		type_:   type_,
@@ -45,7 +44,7 @@ func new_build_rule[T internal.TokenTyper](type_ T, is_skip bool, fn LexFunc[T])
 // Returns:
 //   - *build_rule[T]: The new build rule. Never returns nil.
 func new_skip_build_rule[T internal.TokenTyper](fn LexFunc[T]) *build_rule[T] {
-	dbg.AssertNotNil(fn, "fn")
+	// dbg.AssertNotNil(fn, "fn")
 
 	return &build_rule[T]{
 		type_:   T(0),
@@ -63,7 +62,7 @@ func new_skip_build_rule[T internal.TokenTyper](fn LexFunc[T]) *build_rule[T] {
 //   - *gr.Token[T]: The new token if the rule is not a skip rule. Nil otherwise.
 //   - error: An error if the rule failed.
 func (r build_rule[T]) apply(lexer *ActiveLexer[T]) (*gr.Token[T], error) {
-	dbg.AssertNotNil(lexer, "lexer")
+	// dbg.AssertNotNil(lexer, "lexer")
 
 	str, err := r.fn(lexer)
 	if err != nil {

@@ -8,10 +8,9 @@ import (
 
 	gcos "github.com/PlayerR9/go-commons/os"
 	gcstr "github.com/PlayerR9/go-commons/strings"
-	dbg "github.com/PlayerR9/go-debug/assert"
-	"github.com/PlayerR9/grammar/OLD/ast"
-	displ "github.com/PlayerR9/grammar/OLD/displayer"
-	gr "github.com/PlayerR9/grammar/OLD/grammar"
+	"github.com/PlayerR9/grammar/PREV/OLD/ast"
+	displ "github.com/PlayerR9/grammar/PREV/OLD/displayer"
+	gr "github.com/PlayerR9/grammar/PREV/OLD/grammar"
 )
 
 // DecisionFunc is the function that returns the decision of the parser.
@@ -188,7 +187,7 @@ func (p *Parser[S]) Accept() {
 // Returns:
 //   - []*grammar.Token[S]: The syntax forest of the parser.
 func get_forest[S gr.TokenTyper](parser *Parser[S]) []*gr.Token[S] {
-	dbg.AssertNotNil(parser, "parser")
+	// dbg.AssertNotNil(parser, "parser")
 
 	var forest []*gr.Token[S]
 
@@ -198,7 +197,7 @@ func get_forest[S gr.TokenTyper](parser *Parser[S]) []*gr.Token[S] {
 			break
 		}
 
-		dbg.AssertNotNil(top, "top")
+		// dbg.AssertNotNil(top, "top")
 
 		forest = append(forest, top)
 	}
@@ -321,8 +320,8 @@ func (p *Parser[S]) FullParse(tokens []*gr.Token[S]) []*gr.Token[S] {
 func (p *Parser[S]) FullParseWithSteps(tokens []*gr.Token[S], data []byte, tab_size int) []*gr.Token[S] {
 	p.SetInputStream(tokens)
 
-	err := p.Step("\t\t**Initial State:**\n", data, tab_size)
-	dbg.AssertErr(err, "parser.Step()")
+	_ = p.Step("\t\t**Initial State:**\n", data, tab_size)
+	// dbg.AssertErr(err, "parser.Step()")
 
 	ok := p.Shift() // initial shift
 	if !ok {
@@ -335,8 +334,8 @@ func (p *Parser[S]) FullParseWithSteps(tokens []*gr.Token[S], data []byte, tab_s
 
 	p.last_action = NewShiftAction()
 
-	err = p.Step("\t\t**Initial Shift:**\n", data, tab_size)
-	dbg.AssertErr(err, "parser.Step()")
+	_ = p.Step("\t\t**Initial Shift:**\n", data, tab_size)
+	// dbg.AssertErr(err, "parser.Step()")
 
 	for p.Err == nil {
 		top, _ := p.Peek()
@@ -353,8 +352,8 @@ func (p *Parser[S]) FullParseWithSteps(tokens []*gr.Token[S], data []byte, tab_s
 
 		p.last_action = act
 
-		err = p.Step("\t\t**Decision:**\n", data, tab_size)
-		dbg.AssertErr(err, "parser.Step()")
+		_ = p.Step("\t\t**Decision:**\n", data, tab_size)
+		// dbg.AssertErr(err, "parser.Step()")
 
 		switch act := act.(type) {
 		case *ShiftAction:
@@ -380,15 +379,15 @@ func (p *Parser[S]) FullParseWithSteps(tokens []*gr.Token[S], data []byte, tab_s
 
 		p.last_action = nil
 
-		err = p.Step("\t\t**Apply Action:**\n", data, tab_size)
-		dbg.AssertErr(err, "parser.Step()")
+		_ = p.Step("\t\t**Apply Action:**\n", data, tab_size)
+		// dbg.AssertErr(err, "parser.Step()")
 	}
 
 	p.Refuse()
 	forest := get_forest(p)
 
-	err = p.Step("\t\t**Final State:**\n", data, tab_size)
-	dbg.AssertErr(err, "parser.Step()")
+	_ = p.Step("\t\t**Final State:**\n", data, tab_size)
+	// dbg.AssertErr(err, "parser.Step()")
 
 	return forest
 }
@@ -398,8 +397,8 @@ func (p Parser[S]) display_stack() {
 	var pr ast.AstPrinter[*gr.Token[S]]
 
 	for _, elem := range p.stack {
-		err := ast.Apply(&pr, elem)
-		dbg.AssertErr(err, "traversing.Apply(&printer, %s)", elem.String())
+		_ = ast.Apply(&pr, elem)
+		// dbg.AssertErr(err, "traversing.Apply(&printer, %s)", elem.String())
 
 		fmt.Println(pr.String())
 		fmt.Println()

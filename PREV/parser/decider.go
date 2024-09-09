@@ -5,7 +5,6 @@ import (
 
 	utst "github.com/PlayerR9/go-commons/cmp"
 	gcslc "github.com/PlayerR9/go-commons/slices"
-	dbg "github.com/PlayerR9/go-debug/assert"
 	gr "github.com/PlayerR9/grammar/PREV/grammar"
 	"github.com/PlayerR9/grammar/PREV/internal"
 )
@@ -31,7 +30,7 @@ type decider[T internal.TokenTyper] struct {
 // Returns:
 //   - *Decider[T]: The new decider. Never returns nil.
 func new_decider[T internal.TokenTyper](p *ActiveParser[T], item_list []*Item[T]) *decider[T] {
-	dbg.AssertNotNil(p, "p")
+	// dbg.AssertNotNil(p, "p")
 
 	return &decider[T]{
 		p:         p,
@@ -102,7 +101,7 @@ func (d *decider[T]) filter_lookaheads(indices []int, top1 *gr.Token[T]) ([]int,
 //   - []int: The new indices.
 //   - T: The new previous token.
 func (d *decider[T]) apply_pop_rule(indices []int, prev T, offset int) ([]int, T) {
-	dbg.AssertThat("offset", dbg.NewOrderedAssert(offset).GreaterThan(0)).Panic()
+	// dbg.AssertThat("offset", dbg.NewOrderedAssert(offset).GreaterThan(0)).Panic()
 
 	top, pop_ok := d.p.Pop()
 

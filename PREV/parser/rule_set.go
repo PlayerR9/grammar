@@ -5,8 +5,8 @@ import (
 	"slices"
 	"strings"
 
+	dbg "github.com/PlayerR9/go-commons/assert"
 	utst "github.com/PlayerR9/go-commons/cmp"
-	dbg "github.com/PlayerR9/go-debug/assert"
 	"github.com/PlayerR9/grammar/PREV/internal"
 )
 
@@ -84,8 +84,8 @@ func (rs *RuleSet[T]) MustAddRule(rule *Rule[T]) {
 //   - lhs: The left hand side of the rule.
 //   - rhss: The right hand side of the rule.
 func (rs *RuleSet[T]) MustMakeRule(lhs T, rhss []T) {
-	rule, err := NewRule(lhs, rhss)
-	dbg.AssertErr(err, "NewRule(%q, rhss)", lhs.String())
+	rule, _ := NewRule(lhs, rhss)
+	// dbg.AssertErr(err, "NewRule(%q, rhss)", lhs.String())
 
 	if slices.ContainsFunc(rs.rules, rule.Equals) {
 		panic("rule already exists")
@@ -119,8 +119,8 @@ func (rs *RuleSet[T]) DetermineItems() {
 			}
 
 			for _, idx := range indices {
-				item, err := NewItem(rule, idx)
-				dbg.AssertErr(err, "NewItem(rule, %d)", idx)
+				item, _ := NewItem(rule, idx)
+				// dbg.AssertErr(err, "NewItem(rule, %d)", idx)
 
 				item_list = append(item_list, item)
 			}
@@ -167,7 +167,7 @@ func (rs *RuleSet[T]) solve_lookbehinds() {
 //
 // Note: The offset must be greater than 0.
 func (rs RuleSet[T]) DetermineLookaheads(item *Item[T], offset int) {
-	dbg.AssertThat("offset", dbg.NewOrderedAssert(offset).GreaterOrEqualThan(1)).Panic()
+	// dbg.AssertThat("offset", dbg.NewOrderedAssert(offset).GreaterOrEqualThan(1)).Panic()
 
 	if item == nil {
 		return
@@ -297,10 +297,10 @@ func (rs RuleSet[T]) RulesWithLhs(lhs T) []*Rule[T] {
 }
 
 func (rs RuleSet[T]) Decision(p *ActiveParser[T]) ([]*Item[T], error) {
-	dbg.AssertNotNil(p, "p")
+	// dbg.AssertNotNil(p, "p")
 
-	top1, ok := p.Pop()
-	dbg.AssertOk(ok, "p.Pop()")
+	top1, _ := p.Pop()
+	// dbg.AssertOk(ok, "p.Pop()")
 
 	item_list, ok := rs.items[top1.Type]
 	if !ok {

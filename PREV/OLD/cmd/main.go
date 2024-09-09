@@ -1,8 +1,8 @@
 package main
 
 import (
-	ggen "github.com/PlayerR9/go-generator/generator"
-	pkg "github.com/PlayerR9/grammar/OLD/cmd/pkg"
+	ggen "github.com/PlayerR9/go-commons/generator"
+	pkg "github.com/PlayerR9/grammar/PREV/OLD/cmd/pkg"
 )
 
 func main() {

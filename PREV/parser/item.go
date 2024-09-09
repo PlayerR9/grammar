@@ -7,7 +7,6 @@ import (
 	gccmp "github.com/PlayerR9/go-commons/cmp"
 	gcers "github.com/PlayerR9/go-commons/errors"
 	gcint "github.com/PlayerR9/go-commons/ints"
-	dbg "github.com/PlayerR9/go-debug/assert"
 	"github.com/PlayerR9/grammar/PREV/internal"
 )
 
@@ -100,8 +99,8 @@ func NewItem[T internal.TokenTyper](rule *Rule[T], pos int) (*Item[T], error) {
 	var act internal.ActionType
 
 	if pos == size {
-		rhs, ok := rule.RhsAt(pos - 1)
-		dbg.AssertOk(ok, "rule.RhsAt(%d)", pos)
+		rhs, _ := rule.RhsAt(pos - 1)
+		// dbg.AssertOk(ok, "rule.RhsAt(%d)", pos)
 
 		if rhs == T(0) {
 			act = internal.ActAcceptType
@@ -202,7 +201,7 @@ func (item *Item[T]) AppendLookahead(ls *gccmp.Set[T]) error {
 		return gcers.NewErrNilParameter("ls")
 	}
 
-	dbg.AssertThat("ls", dbg.NewOrderedAssert(ls.Len()).Equal(0)).Not().Panic()
+	// dbg.AssertThat("ls", dbg.NewOrderedAssert(ls.Len()).Equal(0)).Not().Panic()
 
 	item.lookaheads = append(item.lookaheads, ls)
 

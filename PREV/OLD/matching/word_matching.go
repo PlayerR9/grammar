@@ -9,7 +9,6 @@ import (
 	gcers "github.com/PlayerR9/go-commons/errors"
 	gcch "github.com/PlayerR9/go-commons/runes"
 	gcslc "github.com/PlayerR9/go-commons/slices"
-	dbg "github.com/PlayerR9/go-debug/assert"
 )
 
 type WordMatcher struct {
@@ -76,8 +75,8 @@ func (wmi *WordMatcherInfo) Step(char *rune) {
 		return
 	}
 
-	c, ok := wmi.global.CharAt(wmi.pos)
-	dbg.AssertOk(ok, "wmi.global.CharAt(%d)", wmi.pos)
+	c, _ := wmi.global.CharAt(wmi.pos)
+	// dbg.AssertOk(ok, "wmi.global.CharAt(%d)", wmi.pos)
 
 	if char == nil {
 		wmi.err = fmt.Errorf("expected %q, got nothing instead", strconv.QuoteRune(c))

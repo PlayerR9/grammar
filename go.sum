@@ -1,8 +1,8 @@
-github.com/PlayerR9/go-commons v0.1.13 h1:1KhniNEdeI9VWhq2LTwRmU/fNZUWUinZxZYMQdEEsfs=
-github.com/PlayerR9/go-commons v0.1.13/go.mod h1:qfwfgzPehl/aerLpPpPvesuq71Eb//OQP/MJjPJ2ELI=
-github.com/PlayerR9/go-debug v0.1.5 h1:NCUOzwXnuagwrfR/NNONVrBIzXmhPUMcGX+ySIx8EQY=
-github.com/PlayerR9/go-debug v0.1.5/go.mod h1:SzUukvPW2udZk9KkysIdWdRjEEQPKhAbQav+fpDLzxY=
-github.com/PlayerR9/go-generator v0.1.13 h1:SegQDQ2BWu5R0rDadiDMr08sM1rkoA7K3nX2GcgGA/8=
-github.com/PlayerR9/go-generator v0.1.13/go.mod h1:CHieuDXtYM08ZWYwZFQl3ZFqteeVtp3Kzf49X4TMR+c=
+github.com/PlayerR9/go-commons v0.1.15 h1:s2s2B6kkISZf/A7LaPF/L9u0ydx+yU5AYFPLuTgQXPA=
+github.com/PlayerR9/go-commons v0.1.15/go.mod h1:qfwfgzPehl/aerLpPpPvesuq71Eb//OQP/MJjPJ2ELI=
+github.com/PlayerR9/listlike v0.1.7 h1:sjD4aDEKDRnu8IkXi4KlvsupxxFLN5uU3hkeR+i0uTQ=
+github.com/PlayerR9/listlike v0.1.7/go.mod h1:7PRMckz/k71IQpNz+8eKrD/DxnJ5cqsWyqItAQWROuw=
+github.com/PlayerR9/tree v0.1.14 h1:ZcvRCNC+hKHO1fn6gkax5h5NeLrZFH9QWPZcAA0FtIo=
+github.com/PlayerR9/tree v0.1.14/go.mod h1:tEmS6oobAxM/AWejBuo/zpjPwmqYDj6yTynD+zTUkgs=
 golang.org/x/exp v0.0.0-20240904232852-e7e105dedf7e h1:I88y4caeGeuDQxgdoFPUq097j7kNfw6uvuiNxUBfcBk=
 golang.org/x/exp v0.0.0-20240904232852-e7e105dedf7e/go.mod h1:akd2r19cwCdwSwWeIdzYQGa/EZZyqcOdwWiwj5L5eKQ=

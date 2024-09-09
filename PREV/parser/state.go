@@ -4,7 +4,6 @@ import (
 	"iter"
 	"slices"
 
-	dbg "github.com/PlayerR9/go-debug/assert"
 	"github.com/PlayerR9/grammar/PREV/internal"
 )
 
@@ -74,7 +73,7 @@ func (s State[T]) IsOfSeed(item *Item[T]) bool {
 		return false
 	}
 
-	dbg.AssertThat("s.items", dbg.NewOrderedAssert(len(s.items)).GreaterThan(0)).Panic()
+	// dbg.AssertThat("s.items", dbg.NewOrderedAssert(len(s.items)).GreaterThan(0)).Panic()
 
 	return s.items[0].Equals(item)
 }

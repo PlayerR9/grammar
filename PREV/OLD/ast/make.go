@@ -4,7 +4,7 @@ import (
 	"fmt"
 
 	gcers "github.com/PlayerR9/go-commons/errors"
-	gr "github.com/PlayerR9/grammar/OLD/grammar"
+	gr "github.com/PlayerR9/grammar/PREV/OLD/grammar"
 )
 
 // DoFunc is a function that does something with the AST.

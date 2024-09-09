@@ -5,9 +5,9 @@ import (
 	"iter"
 
 	gcers "github.com/PlayerR9/go-commons/errors"
-	uttr "github.com/PlayerR9/go-commons/tree"
 	gr "github.com/PlayerR9/grammar/PREV/grammar"
 	internal "github.com/PlayerR9/grammar/PREV/internal"
+	uttr "github.com/PlayerR9/tree/tree"
 )
 
 // ToAstFunc is a function that converts a token to an AST node.
@@ -19,18 +19,24 @@ import (
 //   - N: The AST node.
 //   - error: An error if the function failed.
 type ToAstFunc[T internal.TokenTyper, N interface {
-	Child() iter.Seq[N]
 	BackwardChild() iter.Seq[N]
+	Child() iter.Seq[N]
+	Cleanup() []N
+	Copy() N
+	LinkChildren(children []N)
 
-	uttr.TreeNoder
+	uttr.Noder
 }] func(tk *gr.Token[T]) (N, error)
 
 // AstBuilder is an AST builder.
 type AstBuilder[T internal.TokenTyper, N interface {
 	Child() iter.Seq[N]
 	BackwardChild() iter.Seq[N]
+	Cleanup() []N
+	Copy() N
+	LinkChildren(children []N)
 
-	uttr.TreeNoder
+	uttr.Noder
 }] struct {
 	// table is the table of the AST builder.
 	table map[T]ToAstFunc[T, N]
@@ -43,8 +49,11 @@ type AstBuilder[T internal.TokenTyper, N interface {
 func NewAstBuilder[T internal.TokenTyper, N interface {
 	Child() iter.Seq[N]
 	BackwardChild() iter.Seq[N]
+	Cleanup() []N
+	Copy() N
+	LinkChildren(children []N)
 
-	uttr.TreeNoder
+	uttr.Noder
 }]() *AstBuilder[T, N] {
 	return &AstBuilder[T, N]{
 		table: make(map[T]ToAstFunc[T, N]),
@@ -134,7 +143,7 @@ func LhsAst[T internal.TokenTyper, N interface {
 	Child() iter.Seq[N]
 	BackwardChild() iter.Seq[N]
 
-	uttr.TreeNoder
+	uttr.Noder
 }](root *gr.Token[T], lhs T, f func(children []*gr.Token[T]) ([]N, error)) ([]N, error) {
 	if root == nil {
 		return nil, gcers.NewErrNilParameter("root")

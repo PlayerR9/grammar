@@ -4,8 +4,6 @@ import (
 	"errors"
 	"io"
 	"unicode"
-
-	dbg "github.com/PlayerR9/go-debug/assert"
 )
 
 var (
@@ -55,8 +53,8 @@ func LexCategory(scanner io.RuneScanner, is func(rune) bool, lex_one bool) ([]ru
 		}
 
 		if !is(c) {
-			err = scanner.UnreadRune()
-			dbg.AssertErr(err, "scanner.UnreadRune()")
+			_ = scanner.UnreadRune()
+			// dbg.AssertErr(err, "scanner.UnreadRune()")
 
 			return nil, NoMatch
 		}
@@ -76,8 +74,8 @@ func LexCategory(scanner io.RuneScanner, is func(rune) bool, lex_one bool) ([]ru
 			}
 
 			if !is(c) {
-				err = scanner.UnreadRune()
-				dbg.AssertErr(err, "scanner.UnreadRune()")
+				_ = scanner.UnreadRune()
+				// dbg.AssertErr(err, "scanner.UnreadRune()")
 
 				break
 			}
@@ -125,8 +123,8 @@ func MakeCategoryLexer(is func(c rune) bool, lex_one bool) LexFunc {
 			}
 
 			if !is(c) {
-				err = scanner.UnreadRune()
-				dbg.AssertErr(err, "scanner.UnreadRune()")
+				_ = scanner.UnreadRune()
+				// dbg.AssertErr(err, "scanner.UnreadRune()")
 
 				return nil, NoMatch
 			}
@@ -150,8 +148,8 @@ func MakeCategoryLexer(is func(c rune) bool, lex_one bool) LexFunc {
 				}
 
 				if !is(c) {
-					err = scanner.UnreadRune()
-					dbg.AssertErr(err, "scanner.UnreadRune()")
+					_ = scanner.UnreadRune()
+					// dbg.AssertErr(err, "scanner.UnreadRune()")
 
 					break
 				}

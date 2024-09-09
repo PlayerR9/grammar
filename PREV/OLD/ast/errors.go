@@ -4,7 +4,7 @@ import (
 	"strconv"
 	"strings"
 
-	gr "github.com/PlayerR9/grammar/OLD/grammar"
+	gr "github.com/PlayerR9/grammar/PREV/OLD/grammar"
 )
 
 // ErrInvalidType is an error that occurs when an invalid type is encountered.

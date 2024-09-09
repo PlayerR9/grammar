@@ -5,7 +5,7 @@ import (
 	"log"
 	"os"
 
-	ggen "github.com/PlayerR9/go-generator/generator"
+	ggen "github.com/PlayerR9/go-commons/generator"
 )
 
 var (

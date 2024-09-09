@@ -7,9 +7,8 @@ import (
 	"unicode/utf8"
 
 	gcch "github.com/PlayerR9/go-commons/runes"
-	dbg "github.com/PlayerR9/go-debug/assert"
-	gr "github.com/PlayerR9/grammar/OLD/grammar"
-	gccdm "github.com/PlayerR9/grammar/OLD/matcher"
+	gr "github.com/PlayerR9/grammar/PREV/OLD/grammar"
+	gccdm "github.com/PlayerR9/grammar/PREV/OLD/matcher"
 )
 
 // LexOneFunc is the function that lexes the next token of the lexer.
@@ -78,8 +77,8 @@ func (l *Lexer[S]) Reset() {
 	if l.table == nil {
 		var table gccdm.LavenshteinTable
 
-		err := table.AddWords(l.matcher.GetWords())
-		dbg.AssertErr(err, "table.AddWords(l.matcher.GetWords())")
+		_ = table.AddWords(l.matcher.GetWords())
+		// dbg.AssertErr(err, "table.AddWords(l.matcher.GetWords())")
 
 		l.table = &table
 	}

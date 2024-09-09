@@ -4,7 +4,7 @@ import (
 	"errors"
 
 	gcers "github.com/PlayerR9/go-commons/errors"
-	gr "github.com/PlayerR9/grammar/OLD/grammar"
+	gr "github.com/PlayerR9/grammar/PREV/OLD/grammar"
 )
 
 // LeftAstFunc is a function that parses the left-recursive AST.

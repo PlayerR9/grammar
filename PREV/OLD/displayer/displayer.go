@@ -10,8 +10,7 @@ import (
 	gfch "github.com/PlayerR9/go-commons/Formatting/runes"
 	gcby "github.com/PlayerR9/go-commons/bytes"
 	gcint "github.com/PlayerR9/go-commons/ints"
-	dbg "github.com/PlayerR9/go-debug/assert"
-	"github.com/PlayerR9/grammar/OLD/lexing"
+	"github.com/PlayerR9/grammar/PREV/OLD/lexing"
 )
 
 var (
@@ -63,7 +62,7 @@ func (s *PrintSettings) make_arrow(faulty_line []byte, start_pos int) ([]byte, e
 	if s.delta < 0 {
 		faulty_line = faulty_line[start_pos:]
 
-		dbg.Assert(len(faulty_line) > 0, "faulty_line is empty; this should never happen")
+		// dbg.Assert(len(faulty_line) > 0, "faulty_line is empty; this should never happen")
 
 		r, size := utf8.DecodeRune(faulty_line)
 		faulty_line = faulty_line[size:]
@@ -164,8 +163,8 @@ func PrintSyntaxError(data []byte, start_pos int, opts ...PrintOption) []byte {
 		}
 	}
 
-	arrow_data, err := s.make_arrow(faulty_line, start_pos-len(before))
-	dbg.AssertErr(err, "PrintSettings.make_arrow(%q, %d)", string(faulty_line), start_pos-len(before))
+	arrow_data, _ := s.make_arrow(faulty_line, start_pos-len(before))
+	// dbg.AssertErr(err, "PrintSettings.make_arrow(%q, %d)", string(faulty_line), start_pos-len(before))
 
 	before = gcby.LimitReverseLines(before, s.prev_lines)
 	after = gcby.LimitLines(after, s.next_lines)
@@ -205,11 +204,11 @@ func PrintSyntaxError(data []byte, start_pos int, opts ...PrintOption) []byte {
 func PrintBoxedData(data []byte, at int, opts ...PrintOption) []byte {
 	var table gfch.RuneTable
 
-	err := table.FromBytes(bytes.Split(PrintSyntaxError(data, at, opts...), []byte("\n")))
-	dbg.AssertErr(err, "table.FromBytes(data)")
+	_ = table.FromBytes(bytes.Split(PrintSyntaxError(data, at, opts...), []byte("\n")))
+	// dbg.AssertErr(err, "table.FromBytes(data)")
 
-	err = BoxStyle.Apply(&table)
-	dbg.AssertErr(err, "BoxStyle.Apply(&table)")
+	_ = BoxStyle.Apply(&table)
+	// dbg.AssertErr(err, "BoxStyle.Apply(&table)")
 
 	return table.Byte()
 }

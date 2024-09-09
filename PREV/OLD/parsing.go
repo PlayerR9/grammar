@@ -5,12 +5,10 @@ import (
 	"fmt"
 	"iter"
 
-	"github.com/PlayerR9/grammar/OLD/ast"
-	"github.com/PlayerR9/grammar/OLD/grammar"
-	"github.com/PlayerR9/grammar/OLD/lexing"
-	"github.com/PlayerR9/grammar/OLD/parsing"
-
-	dbg "github.com/PlayerR9/go-debug/assert"
+	"github.com/PlayerR9/grammar/PREV/OLD/ast"
+	"github.com/PlayerR9/grammar/PREV/OLD/grammar"
+	"github.com/PlayerR9/grammar/PREV/OLD/lexing"
+	"github.com/PlayerR9/grammar/PREV/OLD/parsing"
 )
 
 // DebugSetting is the debug setting.
@@ -133,10 +131,10 @@ func (p Parser[T, S]) Parse(data []byte) (T, error) {
 		var p ast.AstPrinter[*grammar.Token[S]]
 
 		for _, tree := range forest {
-			dbg.AssertNotNil(tree, "tree")
+			// dbg.AssertNotNil(tree, "tree")
 
-			err := ast.Apply(&p, tree)
-			dbg.AssertErr(err, "traversing.Apply(p, %s)", tree.String())
+			_ = ast.Apply(&p, tree)
+			// dbg.AssertErr(err, "traversing.Apply(p, %s)", tree.String())
 
 			fmt.Println(p.String())
 			fmt.Println()
@@ -159,10 +157,10 @@ func (p Parser[T, S]) Parse(data []byte) (T, error) {
 		var pr ast.AstPrinter[T]
 
 		for _, node := range nodes {
-			dbg.AssertNotNil(node, "node")
+			// dbg.AssertNotNil(node, "node")
 
-			err := ast.Apply(&pr, node)
-			dbg.AssertErr(err, "traversing.Apply(pr, %s)", node.String())
+			_ = ast.Apply(&pr, node)
+			// dbg.AssertErr(err, "traversing.Apply(pr, %s)", node.String())
 
 			fmt.Println(pr.String())
 			fmt.Println()

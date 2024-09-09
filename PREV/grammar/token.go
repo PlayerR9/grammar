@@ -37,8 +37,20 @@ type Token[T internal.TokenTyper] struct {
 	Lookahead *Token[T]
 }
 
-// GoString implements the pkg.Type interface.
-func (t *Token[T]) GoString() string {
+func (t *Token[T]) Cleanup() []*Token[T] {
+	panic("implement me")
+}
+
+func (t *Token[T]) IsSingleton() bool {
+	panic("implement me")
+}
+
+func (t *Token[T]) LinkChildren(children []*Token[T]) {
+	panic("implement me")
+}
+
+// String implements the pkg.Type interface.
+func (t *Token[T]) String() string {
 	var builder strings.Builder
 
 	builder.WriteString("Token[T][")

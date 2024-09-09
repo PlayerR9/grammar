@@ -2,7 +2,6 @@ package ast
 
 import (
 	gcers "github.com/PlayerR9/go-commons/errors"
-	dbg "github.com/PlayerR9/go-debug/assert"
 )
 
 // TravData is a container for the data associated with the node before the node is visited.
@@ -56,7 +55,7 @@ func Apply[T any](trav interface {
 		top := stack[len(stack)-1]
 		stack = stack[:len(stack)-1]
 
-		dbg.Assert(top.Data != nil, "data must not be nil")
+		// dbg.Assert(top.Data != nil, "data must not be nil")
 
 		children, err := top.Data.Apply(top.Node)
 		if err != nil {
