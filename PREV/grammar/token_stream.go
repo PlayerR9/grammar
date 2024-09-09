@@ -3,7 +3,7 @@ package grammar
 import (
 	"io"
 
-	internal "github.com/PlayerR9/grammar/internal"
+	internal "github.com/PlayerR9/grammar/PREV/internal"
 )
 
 // TokenReader is an interface for reading tokens from a token stream.

@@ -6,7 +6,7 @@ import (
 
 	gcers "github.com/PlayerR9/go-commons/errors"
 	dbg "github.com/PlayerR9/go-debug/assert"
-	internal "github.com/PlayerR9/grammar/internal"
+	internal "github.com/PlayerR9/grammar/PREV/internal"
 )
 
 // LexGroup is a helper function for lexing a group of characters that satisfy a given predicate according

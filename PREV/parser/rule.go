@@ -6,7 +6,7 @@ import (
 
 	utst "github.com/PlayerR9/go-commons/cmp"
 	gcers "github.com/PlayerR9/go-commons/errors"
-	"github.com/PlayerR9/grammar/internal"
+	"github.com/PlayerR9/grammar/PREV/internal"
 )
 
 // Rule is a grammar rule.

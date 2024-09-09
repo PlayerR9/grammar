@@ -4,10 +4,10 @@ import (
 	"fmt"
 	"io"
 
-	gr "github.com/PlayerR9/grammar/grammar"
+	gr "github.com/PlayerR9/grammar/PREV/grammar"
 
 	dbg "github.com/PlayerR9/go-debug/assert"
-	internal "github.com/PlayerR9/grammar/internal"
+	internal "github.com/PlayerR9/grammar/PREV/internal"
 )
 
 // Builder is the builder of the lexer.

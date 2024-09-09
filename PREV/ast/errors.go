@@ -4,7 +4,7 @@ import (
 	"strings"
 
 	gcers "github.com/PlayerR9/go-commons/errors"
-	internal "github.com/PlayerR9/grammar/internal"
+	internal "github.com/PlayerR9/grammar/PREV/internal"
 )
 
 // ErrIn is an error that occurs when an error is encountered in a rule.

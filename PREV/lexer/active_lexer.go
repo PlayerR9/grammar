@@ -1,8 +1,8 @@
 package lexer
 
 import (
-	gr "github.com/PlayerR9/grammar/grammar"
-	internal "github.com/PlayerR9/grammar/internal"
+	gr "github.com/PlayerR9/grammar/PREV/grammar"
+	internal "github.com/PlayerR9/grammar/PREV/internal"
 )
 
 // LexFunc is the lexing function.

@@ -7,7 +7,7 @@ import (
 
 	utst "github.com/PlayerR9/go-commons/cmp"
 	dbg "github.com/PlayerR9/go-debug/assert"
-	"github.com/PlayerR9/grammar/internal"
+	"github.com/PlayerR9/grammar/PREV/internal"
 )
 
 // RuleSet is the rule set data structure.

@@ -7,7 +7,7 @@ import (
 
 	gcers "github.com/PlayerR9/go-commons/errors"
 	gcslc "github.com/PlayerR9/go-commons/slices"
-	internal "github.com/PlayerR9/grammar/internal"
+	internal "github.com/PlayerR9/grammar/PREV/internal"
 )
 
 // Token is a token in the token stream.

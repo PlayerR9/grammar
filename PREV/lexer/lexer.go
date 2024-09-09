@@ -6,7 +6,7 @@ import (
 
 	gcbk "github.com/PlayerR9/go-commons/backup"
 	gcch "github.com/PlayerR9/go-commons/runes"
-	internal "github.com/PlayerR9/grammar/internal"
+	internal "github.com/PlayerR9/grammar/PREV/internal"
 )
 
 var (

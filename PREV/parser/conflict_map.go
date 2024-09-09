@@ -4,7 +4,7 @@ import (
 	"iter"
 
 	"github.com/PlayerR9/go-commons/set"
-	"github.com/PlayerR9/grammar/internal"
+	"github.com/PlayerR9/grammar/PREV/internal"
 )
 
 // ConflictMap is the conflict map.

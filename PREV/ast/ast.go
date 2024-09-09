@@ -6,8 +6,8 @@ import (
 
 	gcers "github.com/PlayerR9/go-commons/errors"
 	uttr "github.com/PlayerR9/go-commons/tree"
-	gr "github.com/PlayerR9/grammar/grammar"
-	internal "github.com/PlayerR9/grammar/internal"
+	gr "github.com/PlayerR9/grammar/PREV/grammar"
+	internal "github.com/PlayerR9/grammar/PREV/internal"
 )
 
 // ToAstFunc is a function that converts a token to an AST node.

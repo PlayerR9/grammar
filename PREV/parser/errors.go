@@ -6,7 +6,7 @@ import (
 
 	gcers "github.com/PlayerR9/go-commons/errors"
 	gcstr "github.com/PlayerR9/go-commons/strings"
-	"github.com/PlayerR9/grammar/internal"
+	"github.com/PlayerR9/grammar/PREV/internal"
 )
 
 // ErrUnexpectedLookahead is the error for unexpected tokens.

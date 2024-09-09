@@ -6,8 +6,8 @@ import (
 	utst "github.com/PlayerR9/go-commons/cmp"
 	gcslc "github.com/PlayerR9/go-commons/slices"
 	dbg "github.com/PlayerR9/go-debug/assert"
-	gr "github.com/PlayerR9/grammar/grammar"
-	"github.com/PlayerR9/grammar/internal"
+	gr "github.com/PlayerR9/grammar/PREV/grammar"
+	"github.com/PlayerR9/grammar/PREV/internal"
 )
 
 // decider is the decider of the active parser.

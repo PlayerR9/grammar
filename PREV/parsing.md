@@ -8,11 +8,11 @@ import (
 	gchlp "github.com/PlayerR9/go-commons/helpers"
 	uttr "github.com/PlayerR9/go-commons/tree"
 	dbp "github.com/PlayerR9/go-debug/debug"
-	ast "github.com/PlayerR9/grammar/ast"
-	gr "github.com/PlayerR9/grammar/grammar"
-	"github.com/PlayerR9/grammar/internal"
-	lxr "github.com/PlayerR9/grammar/lexer"
-	prx "github.com/PlayerR9/grammar/parser"
+	ast "github.com/PlayerR9/grammar/PREV/ast"
+	gr "github.com/PlayerR9/grammar/PREV/grammar"
+	"github.com/PlayerR9/grammar/PREV/internal"
+	lxr "github.com/PlayerR9/grammar/PREV/lexer"
+	prx "github.com/PlayerR9/grammar/PREV/parser"
 )
 
 // DebugSetting is the debug setting.

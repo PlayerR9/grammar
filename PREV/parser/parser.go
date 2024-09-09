@@ -7,8 +7,8 @@ import (
 	gcers "github.com/PlayerR9/go-commons/errors"
 	"github.com/PlayerR9/go-commons/stack"
 	dbg "github.com/PlayerR9/go-debug/assert"
-	gr "github.com/PlayerR9/grammar/grammar"
-	"github.com/PlayerR9/grammar/internal"
+	gr "github.com/PlayerR9/grammar/PREV/grammar"
+	"github.com/PlayerR9/grammar/PREV/internal"
 )
 
 // DecisionFn is the decision function.
