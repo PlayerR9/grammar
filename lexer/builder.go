@@ -5,6 +5,7 @@ import (
 	"unicode/utf8"
 
 	gcch "github.com/PlayerR9/go-commons/runes"
+	dbg "github.com/PlayerR9/go-debug/assert"
 	gr "github.com/PlayerR9/grammar/grammar"
 )
 
@@ -30,6 +31,21 @@ type Builder[T gr.Enumer] struct {
 	def_fn LexFunc[T]
 }
 
+func (b *Builder[T]) validate() error {
+
+}
+
+// NewBuilder creates a new lexer builder.
+//
+// Returns:
+//   - *Builder: The new lexer builder. Never returns nil.
+func NewBuilder[T gr.Enumer]() *Builder[T] {
+	return &Builder[T]{
+		table:  make(map[rune]LexFunc[T]),
+		def_fn: nil,
+	}
+}
+
 // Register registers a new rule.
 //
 // Parameters:
@@ -38,6 +54,8 @@ type Builder[T gr.Enumer] struct {
 //
 // If fn is nil, then it is ignored.
 func (b *Builder[T]) Register(first_char rune, fn LexFunc[T]) {
+	dbg.AssertNotNil(b, "*Builder[T].Register(first_char, fn)")
+
 	if fn == nil {
 		return
 	}
@@ -60,6 +78,8 @@ func (b *Builder[T]) Register(first_char rune, fn LexFunc[T]) {
 //
 // If literal is empty, then it is ignored.
 func (b *Builder[T]) RegisterLiteral(type_ T, literal string) error {
+	dbg.AssertNotNil(b, "*Builder[T].RegisterLiteral(type_, literal)")
+
 	if literal == "" {
 		return nil
 	}
@@ -77,14 +97,16 @@ func (b *Builder[T]) RegisterLiteral(type_ T, literal string) error {
 
 	if len(chars) == 1 {
 		b.table[char] = func(lexer *Lexer[T]) (*gr.Token[T], error) {
-			_, _ = lexer.NextRune()
+			_, ok := lexer.NextRune()
+			dbg.AssertOk(ok, "lexer.NextRune()")
 
 			tk := gr.NewTerminalToken(type_, literal)
 			return tk, nil
 		}
 	} else {
 		b.table[char] = func(lexer *Lexer[T]) (*gr.Token[T], error) {
-			_, _ = lexer.NextRune()
+			_, ok := lexer.NextRune()
+			dbg.AssertOk(ok, "lexer.NextRune()")
 
 			for i := 1; i < len(chars); i++ {
 				exp := chars[i]
@@ -115,6 +137,8 @@ func (b *Builder[T]) RegisterLiteral(type_ T, literal string) error {
 //
 // If literal is empty, then it is ignored.
 func (b *Builder[T]) RegisterSkip(literal string) error {
+	dbg.AssertNotNil(b, "*Builder[T].RegisterSkip(literal)")
+
 	if literal == "" {
 		return nil
 	}
@@ -140,12 +164,15 @@ func (b *Builder[T]) RegisterSkip(literal string) error {
 
 	if len(chars) == 1 {
 		b.table[char] = func(lexer *Lexer[T]) (*gr.Token[T], error) {
-			_, _ = lexer.NextRune()
+			_, ok := lexer.NextRune()
+			dbg.AssertOk(ok, "lexer.NextRune()")
+
 			return nil, nil
 		}
 	} else {
 		b.table[char] = func(lexer *Lexer[T]) (*gr.Token[T], error) {
-			_, _ = lexer.NextRune()
+			_, ok := lexer.NextRune()
+			dbg.AssertOk(ok, "lexer.NextRune()")
 
 			for i := 1; i < len(chars); i++ {
 				exp := chars[i]
@@ -172,6 +199,8 @@ func (b *Builder[T]) RegisterSkip(literal string) error {
 //
 // If fn is nil, then the previous default function is cleared.
 func (b *Builder[T]) RegisterDefault(fn LexFunc[T]) {
+	dbg.AssertNotNil(b, "*Builder[T].RegisterDefault(fn)")
+
 	b.def_fn = fn
 }
 
@@ -196,11 +225,18 @@ func (b Builder[T]) Build() *Lexer[T] {
 
 // Reset resets the builder.
 func (b *Builder[T]) Reset() {
-	for k := range b.table {
-		b.table[k] = nil
-		delete(b.table, k)
+	if b == nil {
+		return
 	}
 
-	b.table = nil
+	if b.table != nil {
+		for k := range b.table {
+			b.table[k] = nil
+			delete(b.table, k)
+		}
+
+		b.table = nil
+	}
+
 	b.def_fn = nil
 }
