@@ -8,4 +8,4 @@ require (
 	github.com/PlayerR9/tree v0.1.14
 )
 
-require golang.org/x/exp v0.0.0-20240904232852-e7e105dedf7e // indirect
+require golang.org/x/exp v0.0.0-20240909161429-701f63a606c0 // indirect
