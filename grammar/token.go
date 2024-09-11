@@ -76,3 +76,27 @@ func NewToken[T Enumer](type_ T, data string, children []*Token[T]) (*Token[T], 
 		Pos:       children[0].Pos,
 	}, nil
 }
+
+// GetType returns the type of the token.
+//
+// Returns:
+//   - T: The type of the token.
+func (tk Token[T]) GetType() T {
+	return tk.Type
+}
+
+// GetData returns the value of the token.
+//
+// Returns:
+//   - string: The value of the token.
+func (tk Token[T]) GetData() string {
+	return tk.Data
+}
+
+// GetPos returns the position of the token in the input stream.
+//
+// Returns:
+//   - int: The position of the token in the input stream.
+func (tk Token[T]) GetPos() int {
+	return tk.Pos
+}
