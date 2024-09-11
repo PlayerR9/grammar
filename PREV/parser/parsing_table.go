@@ -5,9 +5,9 @@ import (
 	"slices"
 
 	"github.com/PlayerR9/go-commons/cmp"
-	"github.com/PlayerR9/go-commons/queue"
 	"github.com/PlayerR9/go-commons/set"
 	"github.com/PlayerR9/grammar/PREV/internal"
+	"github.com/PlayerR9/listlike/queue"
 )
 
 // parse_table is the parsing table.
@@ -112,7 +112,8 @@ func (pt parse_table[T]) closure(seed []*Item[T]) []*Item[T] {
 
 	var result []*Item[T]
 
-	q := queue.NewQueueWithElems(seed)
+	q := queue.NewArrayQueue[*Item[T]]()
+	q.EnqueueMany(seed)
 
 	for {
 		first, ok := q.Dequeue()
@@ -181,7 +182,8 @@ func (pt *parse_table[T]) make_all_states() error {
 	state0 := NewState(initial_items[0], pt.closure(initial_items))
 
 	pt.states = []*State[T]{state0}
-	state_queue := queue.NewQueueWithElems([]*State[T]{state0})
+	state_queue := queue.NewArrayQueue[*State[T]]()
+	_ = state_queue.Enqueue(state0)
 
 	for {
 		first, ok := state_queue.Dequeue()

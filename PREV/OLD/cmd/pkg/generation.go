@@ -31,8 +31,14 @@ type GenData struct {
 }
 
 // SetPackageName implements the generator.Generater interface.
-func (gd *GenData) SetPackageName(pkg_name string) {
+func (gd *GenData) SetPackageName(pkg_name string) bool {
+	if gd == nil {
+		return false
+	}
+
 	gd.PackageName = pkg_name
+
+	return true
 }
 
 var (

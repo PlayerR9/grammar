@@ -11,9 +11,9 @@ type Builder[T gr.Enumer] struct {
 // NewBuilder creates a new parser builder.
 //
 // Returns:
-//   - *Builder: The new parser builder. Never returns nil.
-func NewBuilder[T gr.Enumer]() *Builder[T] {
-	return &Builder[T]{
+//   - Builder: The new parser builder.
+func NewBuilder[T gr.Enumer]() Builder[T] {
+	return Builder[T]{
 		table: make(map[T]ParseFunc[T]),
 	}
 }
@@ -27,7 +27,7 @@ func NewBuilder[T gr.Enumer]() *Builder[T] {
 // If fn is nil, the rule will not be registered.
 // Previously registered rules with the same type will be overwritten.
 func (b *Builder[T]) Register(type_ T, fn ParseFunc[T]) {
-	if fn == nil {
+	if b == nil || fn == nil {
 		return
 	}
 
@@ -52,6 +52,10 @@ func (b Builder[T]) Build() *Parser[T] {
 
 // Reset resets the builder.
 func (b *Builder[T]) Reset() {
+	if b == nil {
+		return
+	}
+
 	for k := range b.table {
 		b.table[k] = nil
 		delete(b.table, k)

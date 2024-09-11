@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"unicode/utf8"
 
-	dbg "github.com/PlayerR9/go-commons/assert"
 	gcch "github.com/PlayerR9/go-commons/runes"
 	gr "github.com/PlayerR9/grammar/grammar"
 )
@@ -38,9 +37,9 @@ func (b *Builder[T]) validate() error {
 // NewBuilder creates a new lexer builder.
 //
 // Returns:
-//   - *Builder: The new lexer builder. Never returns nil.
-func NewBuilder[T gr.Enumer]() *Builder[T] {
-	return &Builder[T]{
+//   - Builder: The new lexer builder.
+func NewBuilder[T gr.Enumer]() Builder[T] {
+	return Builder[T]{
 		table:  make(map[rune]LexFunc[T]),
 		def_fn: nil,
 	}
@@ -54,7 +53,9 @@ func NewBuilder[T gr.Enumer]() *Builder[T] {
 //
 // If fn is nil, then it is ignored.
 func (b *Builder[T]) Register(first_char rune, fn LexFunc[T]) {
-	dbg.AssertNotNil(b, false, "*Builder[T].Register(first_char, fn)")
+	if b == nil {
+		return
+	}
 
 	if fn == nil {
 		return
@@ -78,7 +79,9 @@ func (b *Builder[T]) Register(first_char rune, fn LexFunc[T]) {
 //
 // If literal is empty, then it is ignored.
 func (b *Builder[T]) RegisterLiteral(type_ T, literal string) error {
-	// dbg.AssertNotNil(b, "*Builder[T].RegisterLiteral(type_, literal)")
+	if b == nil {
+		return nil
+	}
 
 	if literal == "" {
 		return nil
@@ -137,9 +140,7 @@ func (b *Builder[T]) RegisterLiteral(type_ T, literal string) error {
 //
 // If literal is empty, then it is ignored.
 func (b *Builder[T]) RegisterSkip(literal string) error {
-	// dbg.AssertNotNil(b, "*Builder[T].RegisterSkip(literal)")
-
-	if literal == "" {
+	if b == nil || literal == "" {
 		return nil
 	}
 
@@ -199,7 +200,9 @@ func (b *Builder[T]) RegisterSkip(literal string) error {
 //
 // If fn is nil, then the previous default function is cleared.
 func (b *Builder[T]) RegisterDefault(fn LexFunc[T]) {
-	// dbg.AssertNotNil(b, "*Builder[T].RegisterDefault(fn)")
+	if b == nil {
+		return
+	}
 
 	b.def_fn = fn
 }
@@ -207,7 +210,7 @@ func (b *Builder[T]) RegisterDefault(fn LexFunc[T]) {
 // Build builds a new Lexer instance.
 //
 // Returns:
-//   - *Lexer: The new Lexer instance.
+//   - *Lexer: The new Lexer instance. Never returns nil.
 func (b Builder[T]) Build() *Lexer[T] {
 	table := make(map[rune]LexFunc[T], len(b.table))
 
